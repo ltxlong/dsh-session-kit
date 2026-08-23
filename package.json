@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Adds system-folder and guarded delete actions to DeepSeek Harness sessions.",
   "type": "module",
   "main": "lib/index.js",
