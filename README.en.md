@@ -20,7 +20,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 ## example
 
-<img width="2520" height="1556" alt="image" src="https://github.com/user-attachments/assets/391d3c03-7b12-48c8-ab18-493fea5ff1c6" />
+<img width="2216" height="1407" alt="image" src="https://github.com/user-attachments/assets/08686071-aab4-4f7f-9e26-f059e7bf623b" />
 
 ## Features
 
@@ -35,7 +35,7 @@ The plugin adds a **Session manager** button to the conversation header. The men
 - **Archive session**: hides the current session from the sidebar by adding it to the workspace archive list.
 - **Open folder**: opens the current session log directory in the system file manager.
 - **Export session**: delegates to DSH Session Log export.
-- **Open archive**: opens the archived-session management dialog.
+- **Archive manager**: opens the archived-session management dialog.
 
 ### Archived-session manager
 
@@ -85,7 +85,7 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 - `lib/index.js`: host routes, archive/session operations, turn deletion, and regeneration logic.
 - `lib/client.js`: web UI slots, modals, topic navigator, turn actions, styles, and locale dictionaries.
 - `cordis.patch.yml`: bundle insertion patch for the plugin.
-- `README.md` / `README.zh.md`: English and Chinese documentation.
+- `README.md` / `README.en.md`: Chinese and English documentation.
 
 ## Notes and limits
 
@@ -94,3 +94,7 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 - Turn deletion/regeneration is intentionally conservative and may refuse unsafe or compacted histories.
 - Regeneration only replays a single plain-text user prompt from the selected turn.
 - Original append-only events remain in the session log even when the active surface no longer shows them.
+
+## License
+
+[MIT](LICENSE)

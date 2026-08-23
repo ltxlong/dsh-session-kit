@@ -35,7 +35,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 - **归档会话**：把当前会话加入工作区归档列表，从侧边栏隐藏。
 - **打开目录**：使用系统文件管理器打开当前会话日志目录。
 - **导出会话**：调用 DSH Session Log 的导出能力。
-- **打开归档**：进入归档会话管理弹窗。
+- **归档管理**：进入归档会话管理弹窗。
 
 ### 归档会话管理
 
@@ -85,7 +85,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 - `lib/index.js`：Host 路由、归档/会话操作、轮次删除与重新生成逻辑。
 - `lib/client.js`：Web UI Slot、弹窗、话题导航、轮次操作、样式与 locale 字典。
 - `cordis.patch.yml`：插件 bundle 插入 patch。
-- `README.md` / `README.zh.md`：英文与中文说明文档。
+- `README.md` / `README.en.md`：中文与英文说明文档。
 
 ## 注意事项与限制
 
@@ -94,3 +94,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 - 轮次删除/重新生成采取保守策略；遇到不安全或已压缩的历史会拒绝执行。
 - 重新生成只支持重放选中轮次中唯一的纯文本用户提问。
 - 即使 active surface 已不再显示被删除内容，原始 append-only 事件仍然保留在会话日志中。
+
+## License
+
+[MIT](LICENSE)

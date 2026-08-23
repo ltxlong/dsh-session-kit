@@ -1,7 +1,7 @@
 {
   "name": "dsh-session-kit",
-  "version": "0.1.1",
-  "description": "Adds system-folder and guarded delete actions to DeepSeek Harness sessions.",
+  "version": "0.1.2",
+  "description": "DeepSeek Harness sessions kit.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -10,7 +10,7 @@
     "./package.json": "./package.json"
   },
   "publishConfig": { "access": "public" },
-  "files": ["lib/**", "README.md", "README.zh.md", "cordis.patch.yml", "package.json"],
+  "files": ["lib/**", "README.md", "README.en.md", "cordis.patch.yml", "package.json", "LICENSE"],
   "dsh": {
     "client": {
       "platform": "web",
