@@ -18,6 +18,10 @@ dsh plugin --profile web add dsh-session-kit
 dsh plugin --profile web add github:ltxlong/dsh-session-kit
 ````
 
+## 示例
+
+<img width="2520" height="1556" alt="image" src="https://github.com/user-attachments/assets/391d3c03-7b12-48c8-ab18-493fea5ff1c6" />
+
 
 ## 功能概览
 
