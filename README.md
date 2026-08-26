@@ -2,7 +2,7 @@
 
 [English](README.en.md) | 中文
 
-`dsh-session-kit` 是一个 DeepSeek Harness 插件，用于增强会话页的日常管理能力。它不修改 DSH 核心源码，而是通过官方扩展点为会话增加管理菜单、归档会话管理、轮次级删除/重新生成，以及右侧话题快捷导航。
+`dsh-session-kit` 是一个 DeepSeek Harness 插件，用于增强会话页的日常管理能力。它不修改 DSH 核心源码，而是通过官方扩展点为会话增加管理菜单、归档会话管理、运行时全局提示、运行时上下文压缩配置、轮次级删除/重新生成，以及右侧话题快捷导航。
 
 ## 安装
 
@@ -21,8 +21,8 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 ## 示例
 
 <img width="2520" height="1556" alt="image" src="https://github.com/user-attachments/assets/195ea9f3-76f5-4799-bb18-4f7a5e9b9ba6" />
-
 <img width="2520" height="1556" alt="image" src="https://github.com/user-attachments/assets/2c5bc152-c9da-4463-9e73-9981f1e4163d" />
+
 
 ## 功能概览
 
@@ -37,7 +37,20 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 - **归档会话**：把当前会话加入工作区归档列表，从侧边栏隐藏。
 - **打开目录**：使用系统文件管理器打开当前会话日志目录。
 - **导出会话**：调用 DSH Session Log 的导出能力。
-- **归档管理**：进入归档会话管理弹窗。
+- **全局提示**：配置一个运行时注入的全局系统提示词，支持开关；保存成功后显示提示，不修改官方代码或配置文件。
+- **压缩配置**：仅在运行时覆盖当前压缩引擎，不修改官方或预设配置文件。
+- **打开归档**：进入归档会话管理弹窗。
+
+### 全局提示
+
+**会话管理 → 全局提示** 会打开“全局提示词设置”弹窗：
+
+- 支持启用/关闭全局提示；
+- 支持编辑全局提示词内容；
+- 保存后会显示保存成功提示；
+- Host 端通过 `ctx.systemPrompt.section()` 把提示词注册到运行时系统提示词组装中；
+- 不修改 DSH 官方代码，也不覆盖官方 `system-prompt` 配置；
+- 插件停用、卸载或未加载后，这段运行时注册会被释放/不再注册，因此不会继续生效。
 
 ### 归档会话管理
 
@@ -84,19 +97,15 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 ## 文件结构
 
-- `lib/index.js`：Host 路由、归档/会话操作、轮次删除与重新生成逻辑。
-- `lib/client.js`：Web UI Slot、弹窗、话题导航、轮次操作、样式与 locale 字典。
+- `lib/index.js`：Host 路由、全局提示运行时注册、归档/会话操作、轮次删除与重新生成逻辑。
+- `lib/client.js`：Web UI Slot、全局提示弹窗、其他弹窗、话题导航、轮次操作、样式与 locale 字典。
 - `cordis.patch.yml`：插件 bundle 插入 patch。
 - `README.md` / `README.en.md`：中文与英文说明文档。
 
 ## 注意事项与限制
 
-- 插件不修改 DSH 核心包。
+- 插件不修改 DSH 核心包；全局提示通过运行时 `systemPrompt.section()` 注册，压缩阈值配置也不写入官方或用户 Agent preset 文件，卸载/关闭插件后 DSH 会回到原本的系统提示词与压缩配置。
 - 整个会话删除在会话运行中始终禁用。
 - 轮次删除/重新生成采取保守策略；遇到不安全或已压缩的历史会拒绝执行。
 - 重新生成只支持重放选中轮次中唯一的纯文本用户提问。
 - 即使 active surface 已不再显示被删除内容，原始 append-only 事件仍然保留在会话日志中。
-
-## License
-
-[MIT](LICENSE)

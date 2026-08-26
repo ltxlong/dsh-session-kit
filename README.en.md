@@ -2,7 +2,7 @@
 
 English | [中文](README.md)
 
-`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, turn-level cleanup/regeneration actions, and a right-side topic navigator.
+`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, and a right-side topic navigator.
 
 ## Install
 
@@ -20,7 +20,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 ## example
 
-<img width="2216" height="1407" alt="image" src="https://github.com/user-attachments/assets/08686071-aab4-4f7f-9e26-f059e7bf623b" />
+<img width="2520" height="1556" alt="image" src="https://github.com/user-attachments/assets/195ea9f3-76f5-4799-bb18-4f7a5e9b9ba6" />
 <img width="2520" height="1556" alt="image" src="https://github.com/user-attachments/assets/2c5bc152-c9da-4463-9e73-9981f1e4163d" />
 
 ## Features
@@ -36,7 +36,20 @@ The plugin adds a **Session manager** button to the conversation header. The men
 - **Archive session**: hides the current session from the sidebar by adding it to the workspace archive list.
 - **Open folder**: opens the current session log directory in the system file manager.
 - **Export session**: delegates to DSH Session Log export.
-- **Archive manager**: opens the archived-session management dialog.
+- **Global prompt**: configures an optional global system prompt that is injected at runtime; successful saves show a success notice and do not modify official code or config files.
+- **Compaction config**: only overrides the current compaction engine at runtime; it does not modify official or preset config files.
+- **Open archive**: opens the archived-session management dialog.
+
+### Global prompt
+
+**Session manager → Global prompt** opens the global prompt dialog:
+
+- enable or disable the global prompt;
+- edit the global prompt text;
+- show a success notice after saving;
+- the host registers the prompt into runtime system-prompt assembly through `ctx.systemPrompt.section()`;
+- it does not modify official DSH code and does not overwrite the official `system-prompt` config;
+- disabling, uninstalling, or not loading the plugin disposes/skips that runtime registration, so the prompt no longer takes effect.
 
 ### Archived-session manager
 
@@ -83,19 +96,15 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 
 ## Files
 
-- `lib/index.js`: host routes, archive/session operations, turn deletion, and regeneration logic.
-- `lib/client.js`: web UI slots, modals, topic navigator, turn actions, styles, and locale dictionaries.
+- `lib/index.js`: host routes, runtime global prompt registration, archive/session operations, turn deletion, and regeneration logic.
+- `lib/client.js`: web UI slots, global-prompt dialog, other modals, topic navigator, turn actions, styles, and locale dictionaries.
 - `cordis.patch.yml`: bundle insertion patch for the plugin.
-- `README.md` / `README.en.md`: Chinese and English documentation.
+- `README.md` / `README.zh.md`: English and Chinese documentation.
 
 ## Notes and limits
 
-- The plugin does not patch DSH core packages.
+- The plugin does not patch DSH core packages; the global prompt is registered at runtime through `systemPrompt.section()`, and the compaction threshold does not write official or user Agent preset files, so disabling/uninstalling the plugin restores the original DSH system prompt and compaction config.
 - Whole-session deletion is disabled while a session is running.
 - Turn deletion/regeneration is intentionally conservative and may refuse unsafe or compacted histories.
 - Regeneration only replays a single plain-text user prompt from the selected turn.
 - Original append-only events remain in the session log even when the active surface no longer shows them.
-
-## License
-
-[MIT](LICENSE)
