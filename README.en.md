@@ -99,7 +99,7 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 - `lib/index.js`: host routes, runtime global prompt registration, archive/session operations, turn deletion, and regeneration logic.
 - `lib/client.js`: web UI slots, global-prompt dialog, other modals, topic navigator, turn actions, styles, and locale dictionaries.
 - `cordis.patch.yml`: bundle insertion patch for the plugin.
-- `README.md` / `README.zh.md`: English and Chinese documentation.
+- `README.md` / `README.en.md`: Chinese and English documentation.
 
 ## Notes and limits
 
@@ -108,3 +108,11 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 - Turn deletion/regeneration is intentionally conservative and may refuse unsafe or compacted histories.
 - Regeneration only replays a single plain-text user prompt from the selected turn.
 - Original append-only events remain in the session log even when the active surface no longer shows them.
+
+## License
+
+[MIT](LICENSE)
+
+## Keywords
+
+deepseek deepseek-harness deepseek-harness-plugin dsh dsh-plugin dsh-plugins dsh-session-kit

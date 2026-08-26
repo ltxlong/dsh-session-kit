@@ -37,7 +37,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 - **归档会话**：把当前会话加入工作区归档列表，从侧边栏隐藏。
 - **打开目录**：使用系统文件管理器打开当前会话日志目录。
 - **导出会话**：调用 DSH Session Log 的导出能力。
-- **全局提示**：配置一个运行时注入的全局系统提示词，支持开关；保存成功后显示提示，不修改官方代码或配置文件。
+- **全局提示**：配置运行时注入的全局系统提示词，支持开关；保存成功后显示提示，不修改官方代码或配置文件。
 - **压缩配置**：仅在运行时覆盖当前压缩引擎，不修改官方或预设配置文件。
 - **打开归档**：进入归档会话管理弹窗。
 
@@ -109,3 +109,12 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 - 轮次删除/重新生成采取保守策略；遇到不安全或已压缩的历史会拒绝执行。
 - 重新生成只支持重放选中轮次中唯一的纯文本用户提问。
 - 即使 active surface 已不再显示被删除内容，原始 append-only 事件仍然保留在会话日志中。
+
+
+## License
+
+[MIT](LICENSE)
+
+## Keywords
+
+deepseek deepseek-harness deepseek-harness-plugin dsh dsh-plugin dsh-plugins dsh-session-kit
