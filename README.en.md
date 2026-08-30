@@ -39,6 +39,9 @@ The plugin adds a **Session manager** button to the conversation header. The men
 - **Global prompt**: configures an optional global system prompt that is injected at runtime; successful saves show a success notice and do not modify official code or config files.
 - **Compaction config**: only overrides the current compaction engine at runtime; it does not modify official or preset config files.
 - **Open archive**: opens the archived-session management dialog.
+- **Session browser**: opens a browser for the current and other non-blank sessions; the directory view is fixed at 10 sessions per page and searches titles, IDs, and working directories.
+- **Rename / Export session**: the browser top actions operate on the selected session, and each row exposes the same actions; unavailable or failed exports are reported in the UI.
+- **Conversation history**: opens a read-only browser for the current session, searches user, assistant, and tool content case-insensitively, and uses a fixed page size of 30 messages.
 
 ### Global prompt
 
