@@ -1,7 +1,24 @@
 {
   "name": "dsh-session-kit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "DeepSeek Harness sessions kit.",
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "deepseek-harness-plugin",
+    "dsh",
+    "dsh-plugin",
+    "dsh-plugins",
+    "dsh-session-kit"
+  ],
+  "homepage": "https://github.com/ltxlong/dsh-session-kit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ltxlong/dsh-session-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ltxlong/dsh-session-kit/issues"
+  },
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -10,6 +27,9 @@
     "./package.json": "./package.json"
   },
   "publishConfig": { "access": "public" },
+  "optionalDependencies": {
+    "@node-rs/jieba": "^2.0.2"
+  },
   "files": ["lib/**", "README.md", "README.en.md", "cordis.patch.yml", "package.json", "LICENSE"],
   "dsh": {
     "client": {
@@ -50,6 +70,7 @@
     "@deepseek-ai/dsh-storage-domain": "^0.1.2-alpha.1",
     "@deepseek-ai/dsh-system-prompt": "^0.1.2-alpha.1",
     "@deepseek-ai/dsh-llm": "^0.1.2-alpha.1",
+    "@deepseek-ai/dsh-tools": "^0.1.2-alpha.1",
     "@deepseek-ai/dsh-session": "^0.1.2-alpha.1",
     "@deepseek-ai/dsh-compaction-basic": "^0.1.2-alpha.1",
     "zod": "^4.4.3"

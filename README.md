@@ -2,7 +2,7 @@
 
 [English](README.en.md) | 中文
 
-`dsh-session-kit` 是一个 DeepSeek Harness 插件，用于增强会话页的日常管理能力。它不修改 DSH 核心源码，而是通过官方扩展点为会话增加管理菜单、归档会话管理、运行时全局提示、运行时上下文压缩配置、轮次级删除/重新生成，以及右侧话题快捷导航。
+`dsh-session-kit` 是一个 DeepSeek Harness 插件，用于增强会话页的日常管理能力。它不修改 DSH 核心源码，而是通过官方扩展点为会话增加管理菜单、归档会话管理、运行时全局提示、运行时上下文压缩配置、轮次级删除/重新生成、本地记忆管理与召回，以及右侧话题快捷导航。
 
 ## 安装
 
@@ -25,7 +25,6 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/dbccfb91-1215-4617-9e87-6cbd74b89b38" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
 
-
 ## 功能概览
 
 ### 会话管理菜单
@@ -33,12 +32,13 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 插件会在会话页头部增加 **会话管理** 按钮，菜单包含：
 
 - **删除会话**：会话停止后，经确认删除当前会话；运行中的会话会被保护，不能删除。
+- **记忆管理**：可以管理记忆项目、临时记忆、永久记忆、记忆标签。
 - **统计调用**：统计当前会话的工具调用，并按工具名显示总数、成功、失败、未完成次数。
 - **重新命名**：通过官方 Session API 修改当前会话标题。
 - **分叉会话**：在当前轮次允许分叉时，从当前会话创建一个新会话。
 - **归档会话**：把当前会话加入工作区归档列表，从侧边栏隐藏。
 - **打开目录**：使用系统文件管理器打开当前会话日志目录。
-- **导出会话**：调用 DSH Session Log 的导出能力。
+- **导出会话**：调用 DSH Session 日志 的导出能力。
 - **全局提示**：配置运行时注入的全局系统提示词，支持开关；保存成功后显示提示，不修改官方代码或配置文件。
 - **压缩配置**：仅在运行时覆盖当前压缩引擎，不修改官方或预设配置文件。
 - **打开归档**：进入归档会话管理弹窗。
@@ -97,16 +97,32 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 - 点击话题可平滑跳转；
 - 屏幕宽度较小时自动隐藏。
 
+### 记忆管理与召回
+
+侧边栏 **记忆** 按钮打开“记忆管理”弹窗，管理本地 SQLite 记忆库（`<profile>/.dsh-session-kit/memory.sqlite`）：
+
+- **项目**：记忆按项目归组，内置 `default` 项目；支持新建/重命名/删除项目，并可为项目配置自动启用的会话 ID；
+- **临时 / 永久记忆**：每轮对话蒸馏产出的临时记忆默认不落库，确认“存储”后写入本地库；支持激活/停用、编辑、跨项目移动与删除；
+- **标签**：预置标签（用户画像、项目约束、模块路径等）与自定义标签，可即时激活/停用；
+- **激活占比**：左侧导航底部以环形图实时显示永久记忆的激活比例；
+- **召回开关**：自动蒸馏每次对话、全部会话启用 default、对话自动匹配项目（每轮增量匹配，仅新启用的项目会通知）。
+
+召回在每轮用户消息时自动执行：jieba + CJK 二元组分词，FTS5 BM25 相关性排序，叠加标签画像权重与时间衰减；命中结果按轮次注入模型上下文，弱输入轮继承上一轮记忆；FTS 不可用时自动回退子串扫描。索引按分词器版本戳在后台分批异步重建，不阻塞启动。
+
+同时提供 `memory_search` 工具供 Agent 主动检索记忆，并在每轮消息旁提供记忆面板：显示该轮上下文中真实携带的记忆。注入命中以快照随会话日志持久化，重启后仍可回看（含临时记忆命中），记忆的后续编辑/删除不影响历史轮显示。
+
 ## 文件结构
 
 - `lib/index.js`：Host 路由、全局提示运行时注册、归档/会话操作、轮次删除与重新生成逻辑。
 - `lib/client.js`：Web UI Slot、全局提示弹窗、其他弹窗、话题导航、轮次操作、样式与 locale 字典。
+- `lib/memory.js`：本地记忆库（SQLite）、jieba/二元组分词召回、蒸馏与后台索引重建逻辑。
 - `cordis.patch.yml`：插件 bundle 插入 patch。
 - `README.md` / `README.en.md`：中文与英文说明文档。
 
 ## 注意事项与限制
 
 - 插件不修改 DSH 核心包；全局提示通过运行时 `systemPrompt.section()` 注册，压缩阈值配置也不写入官方或用户 Agent preset 文件，卸载/关闭插件后 DSH 会回到原本的系统提示词与压缩配置。
+- 记忆库为本地 SQLite 文件（`<profile>/.dsh-session-kit/memory.sqlite`）；删除项目或记忆不可恢复，卸载插件不会自动删除记忆库文件。
 - 整个会话删除在会话运行中始终禁用。
 - 轮次删除/重新生成采取保守策略；遇到不安全或已压缩的历史会拒绝执行。
 - 重新生成只支持重放选中轮次中唯一的纯文本用户提问。
@@ -116,7 +132,3 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 ## License
 
 [MIT](LICENSE)
-
-## Keywords
-
-deepseek deepseek-harness deepseek-harness-plugin dsh dsh-plugin dsh-plugins dsh-session-kit

@@ -2,7 +2,7 @@
 
 English | [中文](README.md)
 
-`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, and a right-side topic navigator.
+`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, local memory management and recall, and a right-side topic navigator.
 
 ## Install
 
@@ -20,8 +20,10 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 ## example
 
-<img width="2520" height="1556" alt="image" src="https://github.com/user-attachments/assets/195ea9f3-76f5-4799-bb18-4f7a5e9b9ba6" />
-<img width="2520" height="1556" alt="image" src="https://github.com/user-attachments/assets/bf0e284c-cf09-429f-b4ee-45fc1acce1c3" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/9833ee58-89c2-4a21-93e6-44cf522907e3" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/783947f9-9753-42dd-b9ef-10f77d762638" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/dbccfb91-1215-4617-9e87-6cbd74b89b38" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
 
 ## Features
 
@@ -30,6 +32,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 The plugin adds a **Session manager** button to the conversation header. The menu provides:
 
 - **Delete session**: deletes the current stopped session after confirmation. Running sessions are protected and cannot be deleted.
+- **Memory manager**: can manage memory items, temporary memory, permanent memory, and memory tags.
 - **Call stats**: counts tool calls in the current session and groups them by tool name, including succeeded, failed, and pending calls.
 - **Rename**: renames the current session through the official session API.
 - **Fork session**: creates a new session from the current one when the current turn is forkable.
@@ -94,16 +97,32 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 - clicking a topic smoothly scrolls to it;
 - the navigator hides on narrow screens.
 
+### Memory management and recall
+
+The sidebar **Memory** button opens the memory-management dialog, which manages a local SQLite memory store (`<profile>/.dsh-session-kit/memory.sqlite`):
+
+- **Projects**: memories are grouped per project with a built-in `default` project; create/rename/delete projects and configure auto-enabled session IDs per project;
+- **Temporary / permanent memories**: each turn distills one temporary memory that stays volatile until explicitly stored; support activate/deactivate, editing, cross-project moves, and deletion;
+- **Tags**: preset tags (user profile, project constraints, module paths, ...) plus custom tags with instant activation toggles;
+- **Activation ratio**: a donut chart at the bottom of the navigation shows the live active ratio of permanent memories;
+- **Recall switches**: auto-distill every turn, enable the default project for all sessions, and auto-match projects on each turn (incremental: only newly matched projects are enabled and announced).
+
+Recall runs automatically on every user turn: jieba + CJK bigram tokenization, FTS5 BM25 relevance ranking, tag-profile weighting, and recency decay; matched memories are injected into the model context per turn, weak turns inherit the previous turn's memories, and a substring scan takes over whenever FTS is unavailable. The index is rebuilt in the background in batches per tokenizer version stamp without blocking startup.
+
+A `memory_search` tool is also provided for agents to search memories on demand, and each turn shows a panel of the memories actually carried in that turn's context. Injected hits are snapshotted into the session log, so the panel survives restarts (including ephemeral-memory hits), and later edits or deletions of memories do not alter past turns.
+
 ## Files
 
 - `lib/index.js`: host routes, runtime global prompt registration, archive/session operations, turn deletion, and regeneration logic.
 - `lib/client.js`: web UI slots, global-prompt dialog, other modals, topic navigator, turn actions, styles, and locale dictionaries.
+- `lib/memory.js`: local memory store (SQLite), jieba/bigram tokenized recall, distillation, and background index rebuild logic.
 - `cordis.patch.yml`: bundle insertion patch for the plugin.
 - `README.md` / `README.en.md`: Chinese and English documentation.
 
 ## Notes and limits
 
 - The plugin does not patch DSH core packages; the global prompt is registered at runtime through `systemPrompt.section()`, and the compaction threshold does not write official or user Agent preset files, so disabling/uninstalling the plugin restores the original DSH system prompt and compaction config.
+- The memory store is a local SQLite file (`<profile>/.dsh-session-kit/memory.sqlite`); deleting projects or memories cannot be undone, and uninstalling the plugin does not remove the memory store file.
 - Whole-session deletion is disabled while a session is running.
 - Turn deletion/regeneration is intentionally conservative and may refuse unsafe or compacted histories.
 - Regeneration only replays a single plain-text user prompt from the selected turn.
@@ -113,6 +132,3 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 
 [MIT](LICENSE)
 
-## Keywords
-
-deepseek deepseek-harness deepseek-harness-plugin dsh dsh-plugin dsh-plugins dsh-session-kit
