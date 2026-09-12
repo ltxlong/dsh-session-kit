@@ -1,5 +1,8 @@
 # dsh-session-kit
 
+![](https://img.shields.io/badge/DeepSeek%20Harness-0.1.5-brightgreen?labelColor=4D6BFE&link=https%3A%2F%2Fgithub.com%2Fdeepseek-ai%2Fdeepseek-harness
+) ![](https://badgen.net/npm/dt/dsh-session-kit)
+
 English | [中文](README.md)
 
 `dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, local memory management and recall, and a right-side topic navigator.
@@ -18,11 +21,16 @@ dsh plugin --profile web add dsh-session-kit
 dsh plugin --profile web add github:ltxlong/dsh-session-kit
 ````
 
+## Note
+
+If updating to dsh version 0.1.5 causes session errors like: History load failed @deepseek-ai/dsh-session-format-v0-to-v1 refuses this format v0 Session,
+The solution is: Ask the AI to fix it, with the prompt: "Fix the broken session and forcibly convert the session format from v0 to v3"
+
 ## example
 
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/9833ee58-89c2-4a21-93e6-44cf522907e3" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/783947f9-9753-42dd-b9ef-10f77d762638" />
-<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/53633d8e-103d-4ea9-b92c-0cb0f7302a0f" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/4b68424a-7ddc-4db3-b862-5abd7ee279ae" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
 
 ## Features
@@ -122,7 +130,7 @@ Memories enter the store through three independent paths, ending in the persiste
 
 **3. Distillation (automatic)** — triggered when a turn ends normally (`turn/end` with reason completed) while auto-distill is on, queued serially per session:
 
-- The full transcript of the turn (user / assistant / tool calls / tool results) is extracted, truncated in the middle beyond 14,000 characters;
+- The full transcript of the turn (user / assistant / tool calls / tool results) is extracted;
 - The session's model (or the distill model override from settings, with automatic fallback to the default route) outputs fixed JSON: `{"paths":[…],"symbols":[…],"content":"…"}`; tags are classified by the program from the body and never rely on model output;
 - Content involving code, paths, or APIs is wrapped into a structured three-line body (`Location: …` / `Objects: …` / `Content: …`) for later path- and symbol-oriented retrieval;
 - Distilled output first lands in the **temporary memory pool** (in memory, not persisted): bodies with the structured three-line format are activated immediately, plain bodies stay deactivated until manually confirmed; duplicates against the persistent store or the pool are merged automatically;
@@ -130,7 +138,7 @@ Memories enter the store through three independent paths, ending in the persiste
 
 #### Recall pipeline
 
-Recall is mounted before every turn request (`agent/pre-step`) and runs automatically with the user input as the query, within a budget of 80ms and at most 20 hits / 9,000 characters.
+Recall is mounted before every turn request (`agent/pre-step`) and runs automatically with the user input as the query, within a budget of 30s and at most 20 hits.
 
 **Preprocessing**
 
@@ -170,6 +178,8 @@ Segment 2 is the **invisible-context compensation channel**: recent turns of thi
 
 Hits are assembled into a single plugin-sourced user message inserted before the turn's user message: a numbered list (project / tags / update date + body) headed by the rule "when conflicting with the user's latest message, the user's message prevails". A snapshot of the hits (1:1 with the body) is persisted with the session events, powering the per-turn memory panel across restarts.
 
+Each memory entry is limited to 500 characters. (If it exceeds the limit, it will be truncated and you'll be prompted to check the full text using the memory tool)
+
 #### Diff-based ejection
 
 Injected memories do not occupy the context forever. After each normal recall, a top-k semantic diff ejection runs:
@@ -188,6 +198,7 @@ The plugin registers 5 memory tools for agents:
 | `memory_add` | Add a long-term memory | Asynchronous background write; use only when the user explicitly asks to remember or the information clearly needs long-term retention |
 | `memory_update` | Update body / tags / status / project | Asynchronous background write |
 | `memory_stop` | Deactivate a memory | Sets status to inactive: excluded from recall but kept in the store |
+| `memory_read` | Read Memory | Read the full text of a memory |
 | `memory_search` | Search the memory store on demand | Parses time expressions from the query (today / yesterday / the day before / last N days / this week / last week / this month / last month / exact dates); filters by project / tags / status; default 10 items, max 50 |
 | `conversation_search` | Search past conversations across sessions | Scans live and persisted session logs with line-level lexical scoring; subagent sessions are excluded by default |
 

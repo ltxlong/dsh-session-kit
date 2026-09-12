@@ -1,5 +1,8 @@
 # dsh-session-kit
 
+![](https://img.shields.io/badge/DeepSeek%20Harness-0.1.5-brightgreen?labelColor=4D6BFE&link=https%3A%2F%2Fgithub.com%2Fdeepseek-ai%2Fdeepseek-harness
+) ![](https://badgen.net/npm/dt/dsh-session-kit)
+
 [English](README.en.md) | 中文
 
 `dsh-session-kit` 是一个 DeepSeek Harness 插件，用于增强会话页的日常管理能力。它不修改 DSH 核心源码，而是通过官方扩展点为会话增加管理菜单、归档会话管理、运行时全局提示、运行时上下文压缩配置、轮次级删除/重新生成、本地记忆管理与召回，以及右侧话题快捷导航。
@@ -17,6 +20,11 @@ dsh plugin --profile web add dsh-session-kit
 ```
 dsh plugin --profile web add github:ltxlong/dsh-session-kit
 ````
+
+## 注意
+
+如果更新了dsh版本0.1.5导致出现会话报错：历史加载失败 @deepseek-ai/dsh-session-format-v0-to-v1 refuses this format v0 Session，
+解决方法是：让AI解决，提示词是：“修复错误会话，将会话格式从v0强行转换为v3”
 
 ## 示例
 
@@ -122,7 +130,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 **3. 蒸馏写入（自动）** — 每轮对话正常结束（`turn/end` 且原因为 completed）且自动蒸馏开启时触发，按会话串行排队执行：
 
-- 提取该轮完整 transcript（用户/助手/工具调用/工具结果），超过 14000 字符中间截断；
+- 提取该轮完整 transcript（用户/助手/工具调用/工具结果）；
 - 调用当前会话模型（或设置中指定的蒸馏模型覆盖，失败自动回退默认路由）输出固定 JSON：`{"paths":[…],"symbols":[…],"content":"…"}`，标签由程序按正文自动分类，不依赖模型输出；
 - 涉及代码、路径或接口的内容自动包装为结构化三行体（`位置：…` / `对象：…` / `内容：…`），便于后续按路径与符号检索；
 - 蒸馏产物先进**临时记忆池**（内存，不落库）：含结构化三行体的直接激活，裸文本默认停用、等待人工确认；与持久库或临时池内容重复的自动合并；
@@ -130,7 +138,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 #### 召回管线
 
-召回挂载在每轮请求前（`agent/pre-step`），以本轮用户输入为查询自动执行，总预算 80ms、最多 20 条 / 9000 字符。
+召回挂载在每轮请求前（`agent/pre-step`），以本轮用户输入为查询自动执行，总预算 30s、最多 20 条。
 
 **预处理**
 
@@ -170,6 +178,8 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 命中结果组装为一条插件来源的用户消息，插在本轮用户消息之前：编号列表（目录/标签/更新日期 + 正文），头部声明“与用户最新消息冲突时以用户消息为准”。注入同时把命中快照（与正文 1:1）随会话事件持久化，供每轮消息旁的记忆面板跨重启回看。
 
+每条记忆的内容注入限制500字符。（超限截断并提示用记忆工具查全文）
+
 #### diff 式剔除
 
 已注入上下文的记忆不会永久占位。每轮正常召回后执行 top-k 语义的 diff 剔除：
@@ -188,6 +198,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 | `memory_add` | 新增长期记忆 | 异步后台写入；仅在用户明确要求记住或信息明显需要长期保留时使用 |
 | `memory_update` | 更新正文/标签/状态/项目 | 异步后台写入 |
 | `memory_stop` | 停用记忆 | 状态改为 inactive，不参与召回但保留在库 |
+| `memory_read` | 阅读记忆 | 读取一条记忆的全文 |
 | `memory_search` | 主动检索记忆库 | 支持从查询解析时间表达（今天/昨天/前天/最近 N 天/本周/上周/本月/上月/具体日期），可按项目/标签/状态过滤，默认 10 条上限 50 |
 | `conversation_search` | 跨会话搜索历史对话 | 扫描内存会话与持久化会话日志，按行词法打分；默认排除子代理会话 |
 
