@@ -23,8 +23,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 ## Note
 
-If updating to dsh version 0.1.5 causes session errors like: History load failed @deepseek-ai/dsh-session-format-v0-to-v1 refuses this format v0 Session,
-The solution is: Ask the AI to fix it, with the prompt: "Fix the broken session and forcibly convert the session format from v0 to v3"
+If updating to dsh version 0.1.5 causes a session loading failure error, such as: History loading failed @deepseek-ai/dsh-session-format-v0-to-v1 refuses this format v0 Session, the solution is: 'Session Management' -> 'Repair Session' -> Click the 'Repair' button to fix the current session.
 
 ## example
 

@@ -23,8 +23,8 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 ## 注意
 
-如果更新了dsh版本0.1.5导致出现会话报错：历史加载失败 @deepseek-ai/dsh-session-format-v0-to-v1 refuses this format v0 Session，
-解决方法是：让AI解决，提示词是：“修复错误会话，将会话格式从v0强行转换为v3”
+如果更新了dsh版本0.1.5导致出现会话加载失败报错，比如：历史加载失败 @deepseek-ai/dsh-session-format-v0-to-v1 refuses this format v0 Session，
+解决方法是：“会话管理”->“修复会话”-> 点击“修复”按钮即可修复当前会话
 
 ## 示例
 
