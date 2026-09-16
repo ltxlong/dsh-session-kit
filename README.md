@@ -1,7 +1,6 @@
 # dsh-session-kit
 
-![](https://img.shields.io/badge/DeepSeek%20Harness-0.1.5-brightgreen?labelColor=4D6BFE&link=https%3A%2F%2Fgithub.com%2Fdeepseek-ai%2Fdeepseek-harness
-) ![](https://badgen.net/npm/dt/dsh-session-kit)
+[![](https://img.shields.io/badge/DeepSeek%20Harness->=0.1.5-brightgreen?labelColor=4D6BFE)](https://github.com/deepseek-ai/deepseek-harness) [![](https://badgen.net/npm/dt/dsh-session-kit)](https://www.npmjs.com/package/dsh-session-kit)
 
 [English](README.en.md) | 中文
 
@@ -131,9 +130,9 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 **3. 蒸馏写入（自动）** — 每轮对话正常结束（`turn/end` 且原因为 completed）且自动蒸馏开启时触发，按会话串行排队执行：
 
 - 提取该轮完整 transcript（用户/助手/工具调用/工具结果）；
-- 调用当前会话模型（或设置中指定的蒸馏模型覆盖，失败自动回退默认路由）输出固定 JSON：`{"paths":[…],"symbols":[…],"content":"…"}`，标签由程序按正文自动分类，不依赖模型输出；
-- 涉及代码、路径或接口的内容自动包装为结构化三行体（`位置：…` / `对象：…` / `内容：…`），便于后续按路径与符号检索；
-- 蒸馏产物先进**临时记忆池**（内存，不落库）：含结构化三行体的直接激活，裸文本默认停用、等待人工确认；与持久库或临时池内容重复的自动合并；
+- 调用当前会话模型（或设置中指定的蒸馏模型覆盖，失败自动回退默认路由）输出固定 JSON：`{"位置":[…],"对象":[…],"内容":"…","踩坑":"…"}`；也接受 `paths` / `symbols` / `content` / `pitfall` 英文 key，标签由程序按正文自动分类，不依赖模型输出；
+- 涉及代码、路径或接口的内容统一按 JSON 规范存储；位置和对象是字符串数组，内容和踩坑均允许换行，未知字段保留，便于后续扩展与按路径/符号检索；
+- 蒸馏产物先进**临时记忆池**（内存，不落库）：含有效结构化 JSON 的直接激活，裸文本默认停用、等待人工确认；与持久库或临时池内容重复的自动合并；
 - 临时记忆带来源会话与轮次元数据，用于召回时的跨会话补偿（见下文）。
 
 #### 召回管线
@@ -178,7 +177,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 命中结果组装为一条插件来源的用户消息，插在本轮用户消息之前：编号列表（目录/标签/更新日期 + 正文），头部声明“与用户最新消息冲突时以用户消息为准”。注入同时把命中快照（与正文 1:1）随会话事件持久化，供每轮消息旁的记忆面板跨重启回看。
 
-每条记忆的内容注入限制500字符。（超限截断并提示用记忆工具查全文）
+每条结构化记忆的 `内容/content` 字段注入限制 500 字符；位置、对象、踩坑和未知字段完整保留。（超限截断并提示用记忆工具查全文）
 
 #### diff 式剔除
 

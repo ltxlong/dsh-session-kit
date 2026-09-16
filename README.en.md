@@ -1,7 +1,6 @@
 # dsh-session-kit
 
-![](https://img.shields.io/badge/DeepSeek%20Harness-0.1.5-brightgreen?labelColor=4D6BFE&link=https%3A%2F%2Fgithub.com%2Fdeepseek-ai%2Fdeepseek-harness
-) ![](https://badgen.net/npm/dt/dsh-session-kit)
+[![](https://img.shields.io/badge/DeepSeek%20Harness->=0.1.5-brightgreen?labelColor=4D6BFE)](https://github.com/deepseek-ai/deepseek-harness) [![](https://badgen.net/npm/dt/dsh-session-kit)](https://www.npmjs.com/package/dsh-session-kit)
 
 English | [中文](README.md)
 
@@ -130,9 +129,9 @@ Memories enter the store through three independent paths, ending in the persiste
 **3. Distillation (automatic)** — triggered when a turn ends normally (`turn/end` with reason completed) while auto-distill is on, queued serially per session:
 
 - The full transcript of the turn (user / assistant / tool calls / tool results) is extracted;
-- The session's model (or the distill model override from settings, with automatic fallback to the default route) outputs fixed JSON: `{"paths":[…],"symbols":[…],"content":"…"}`; tags are classified by the program from the body and never rely on model output;
-- Content involving code, paths, or APIs is wrapped into a structured three-line body (`Location: …` / `Objects: …` / `Content: …`) for later path- and symbol-oriented retrieval;
-- Distilled output first lands in the **temporary memory pool** (in memory, not persisted): bodies with the structured three-line format are activated immediately, plain bodies stay deactivated until manually confirmed; duplicates against the persistent store or the pool are merged automatically;
+- The session's model (or the distill model override from settings, with automatic fallback to the default route) outputs fixed JSON: `{"位置":[…],"对象":[…],"内容":"…","踩坑":"…"}`; the English aliases `paths` / `symbols` / `content` / `pitfall` are also accepted, and tags are classified by the program from the body rather than model output;
+- Content involving code, paths, or APIs is stored as the structured JSON format; paths and symbols are string arrays, content and pitfall may contain newlines, and unknown fields are preserved for future extension;
+- Distilled output first lands in the **temporary memory pool** (in memory, not persisted): valid structured JSON bodies are activated immediately, plain bodies stay deactivated until manually confirmed; duplicates against the persistent store or the pool are merged automatically;
 - Temporary memories carry source-session and source-turn metadata, used for cross-session compensation during recall (see below).
 
 #### Recall pipeline
@@ -177,7 +176,7 @@ Segment 2 is the **invisible-context compensation channel**: recent turns of thi
 
 Hits are assembled into a single plugin-sourced user message inserted before the turn's user message: a numbered list (project / tags / update date + body) headed by the rule "when conflicting with the user's latest message, the user's message prevails". A snapshot of the hits (1:1 with the body) is persisted with the session events, powering the per-turn memory panel across restarts.
 
-Each memory entry is limited to 500 characters. (If it exceeds the limit, it will be truncated and you'll be prompted to check the full text using the memory tool)
+For structured memories, only the `content` field is limited to 500 characters during injection; paths, symbols, pitfall, and unknown fields are preserved. (If it exceeds the limit, it will be truncated and you'll be prompted to check the full text using the memory tool)
 
 #### Diff-based ejection
 
