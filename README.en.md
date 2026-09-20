@@ -4,7 +4,7 @@
 
 English | [中文](README.md)
 
-`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, local memory management and recall, and a right-side topic navigator.
+`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, task management and task archives, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, local memory management and recall, and a right-side topic navigator.
 
 ## Install
 
@@ -26,9 +26,10 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 
 ## example
 
-<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/9833ee58-89c2-4a21-93e6-44cf522907e3" />
-<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/783947f9-9753-42dd-b9ef-10f77d762638" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/ffe483c4-08d2-4a1b-af51-c0694d323670" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/9009088c-24f1-4b71-af21-320f2d8571fb" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/4b68424a-7ddc-4db3-b862-5abd7ee279ae" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
 
 ## Features
@@ -39,6 +40,7 @@ The plugin adds a **Session manager** button to the conversation header. The men
 
 - **Delete session**: deletes the current stopped session after confirmation. Running sessions are protected and cannot be deleted.
 - **Memory manager**: can manage memory items, temporary memory, permanent memory, and memory tags.
+- **Task manager**: view, create, extract, inject, and maintain task archives.
 - **Call stats**: counts tool calls in the current session and groups them by tool name, including succeeded, failed, and pending calls.
 - **Rename**: renames the current session through the official session API.
 - **Fork session**: creates a new session from the current one when the current turn is forkable.
@@ -48,6 +50,54 @@ The plugin adds a **Session manager** button to the conversation header. The men
 - **Global prompt**: configures an optional global system prompt that is injected at runtime; successful saves show a success notice and do not modify official code or config files.
 - **Compaction config**: only overrides the current compaction engine at runtime; it does not modify official or preset config files.
 - **Open archive**: opens the archived-session management dialog.
+
+### Task management and task archives
+
+Task management records a task end to end: subtasks, tool operations, observed files, pitfalls, and participating sessions. It shares the local SQLite database with memory management at `<profile>/.dsh-session-kit/memory.sqlite`.
+
+#### Task statuses
+
+Task progress and trash lifecycle are separate dimensions. There are five task statuses:
+
+| Status | Meaning |
+| --- | --- |
+| `not_started` | Not started |
+| `active` | In progress |
+| `paused` | Paused |
+| `completed` | Completed |
+| `abandoned` | Abandoned |
+
+Trash is not a task status. It is represented by `deleted_at`. Trashed tasks are excluded from the All tab, its status chart, and automatic hints.
+
+#### Automatic recognition and synchronization
+
+- The plugin listens to `todo/write`, `tool/call`, `tool/result`, `turn/end`, and file-observation events.
+- When a session has no task binding, the first useful `todo/write` automatically creates a task and records the project derived from the session working directory.
+- Todo entries are matched to existing subtasks using content, name, and ordinal as fallbacks; historical subtasks that disappear from a later Todo snapshot are retained so recorded operations are not lost.
+- A task becomes `completed` automatically when all of its subtasks are completed; manual states such as `paused` and `abandoned` are not overwritten by automatic derivation.
+- Tool calls, results, and file observations follow the task captured when the tool call was created, preventing late results from contaminating another task after a session switches tasks.
+
+#### Automatic hints and full injection
+
+Before each turn, the plugin can hint at most two already-engaged `active` tasks for the current session. The automatic hint contains only the task name, project, progress, and known pitfalls; **the full task archive is not automatically injected into context**.
+
+When the model determines that the current request belongs to a task, it can call `task_inject`. The user can also click **Inject into current session** on a task card. The full archive is appended as a plugin-sourced user message and the task/session association is updated. Injecting another task switches the active task attribution for subsequent events.
+
+#### Manual creation and extraction
+
+- **New task** does not automatically bind to the current session; association begins when the task is injected or receives real task events.
+- **Extract current session task** reads the latest non-empty Todo snapshot. A same-name task is reused only when its project or working directory matches and it is not in trash; a same-name task from another project creates a new archive.
+- Missing session, event, or usable Todo data produces a specific reason; closed or archived sessions are read from persisted events when available.
+
+#### Trash
+
+Normal deletion moves a task to trash instead of immediately erasing its archive. Subtasks, operations, and pitfalls are retained:
+
+- the delete confirmation says the task is purged automatically after 30 days;
+- trash supports search, pagination, restore, and permanent deletion;
+- restoring a task that was `active` changes it to `paused` so it does not resume automatically; other statuses are preserved;
+- trashed tasks cannot be edited or injected and do not participate in automatic recognition or hints;
+- the Task manager's All statistics exclude trashed tasks.
 
 ### Global prompt
 
@@ -111,7 +161,7 @@ The sidebar **Memory** button opens the memory-management dialog. All memory dat
 - **Memories (memories)**: a body plus a status (`active` memories participate in recall / `inactive` memories are archived only); the normalized body is hashed with SHA-256 as a unique key, which inherently prevents duplicate writes.
 - **Tags (memory_tags / memory_tag_links)**: 13 preset tags (user profile, user preferences, project profile, project architecture, project constraints, module paths, project scenarios, module constraints, project summary, module summary, API summary, work projects, daily life) plus custom tags, all with instant activation toggles; each memory carries at most 12 tags.
 - **Session-project switches (memory_session_directories)**: records which projects each session has enabled.
-- **Settings (memory_settings)**: auto-distill toggle, enable default for all sessions, per-turn project auto-matching, distill model override, and the tokenizer version stamp.
+- **Settings (memory_settings)**: auto-distill toggle, enable default for all sessions, per-turn project auto-matching, distill model override, recall mode and four-segment quotas, and the tokenizer version stamp.
 - **Activity log (memory_activity_logs)**: an audit trail of memory operations, retained for 7 days.
 
 #### Write paths
@@ -136,7 +186,7 @@ Memories enter the store through three independent paths, ending in the persiste
 
 #### Recall pipeline
 
-Recall is mounted before every turn request (`agent/pre-step`) and runs automatically with the user input as the query, within a budget of 30s and at most 20 hits.
+Recall is mounted before every turn request (`agent/pre-step`) and runs automatically with the user input as the query, within a budget of 30s. The default is up to 20 hits; you can also exclude temporary memories with a 15-hit total or use a custom total from 8 to 20. In custom mode, segment 1 is 3-5, segment 2 is 0-5, segment 3 is 0-5, and segment 4 is calculated as total minus segments 1-3 with a minimum of 3; segment 2 is forced to 0 when the total is at most 15, segment 3 is forced to 0 when the total is at most 10, and the four quotas always add up to the maximum.
 
 **Preprocessing**
 
@@ -157,10 +207,10 @@ Candidates are split into a base pool (any tier-1 stable tag: user preferences, 
 
 | Segment | Seats | Members | Score components |
 |---|---|---|---|
-| 1 Base | 5 | Base pool | BM25 + custom tag + profile tag + structure score (tier-1) + recency |
-| 2 Temporary | 5 | Temporary pool | BM25 + custom tag + profile tag |
-| 3 Mixed | 5 | Base remainder + regular pool | All components (both structure tiers, preventing tag-tier inversion) |
-| 4 Fallback | 5–15 | Regular pool remainder | All components except the tier-1 structure score; seats absorb all upstream shortfalls |
+| 1 Base | Default 5; custom 3-5 | Base pool | BM25 + custom tag + profile tag + structure score (tier-1) + recency |
+| 2 Temporary | Default 5; excluded mode 0; custom 0-5 | Temporary pool | BM25 + custom tag + profile tag |
+| 3 Mixed | Default 5; custom 0-5 | Base remainder + regular pool | All components (both structure tiers, preventing tag-tier inversion) |
+| 4 Fallback | Calculated, minimum 3 | Regular pool remainder | Total − segments 1-3; absorbs upstream shortages |
 
 When candidates are plentiful, total injection is a constant 20 hits. Component semantics:
 
@@ -213,6 +263,7 @@ Repeated `memory_search` / `conversation_search` calls with identical arguments 
 - `lib/index.js`: host routes, runtime global prompt registration, archive/session operations, turn deletion, and regeneration logic.
 - `lib/client.js`: web UI slots, global-prompt dialog, other modals, topic navigator, turn actions, styles, and locale dictionaries.
 - `lib/memory.js`: local memory store (SQLite), jieba/bigram tokenized recall, distillation, and background index rebuild logic.
+- `lib/task.js`: task archive capture, status synchronization, task tools, automatic hints, injection, extraction, and trash routes.
 - `cordis.patch.yml`: bundle insertion patch for the plugin.
 - `README.md` / `README.en.md`: Chinese and English documentation.
 
