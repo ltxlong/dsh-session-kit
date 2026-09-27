@@ -4,7 +4,7 @@
 
 English | [中文](README.md)
 
-`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, task management and task archives, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, local memory management and recall, and a right-side topic navigator.
+`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, task management and task archives, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, local memory management and recall, and a left-right-side topic navigator.
 
 ## Install
 
@@ -62,13 +62,13 @@ Task progress and trash lifecycle are separate dimensions. There are five task s
 
 |Status|Meaning|
 |-|-|
-|`not\_started`|Not started|
+|`not_started`|Not started|
 |`active`|In progress|
 |`paused`|Paused|
 |`completed`|Completed|
 |`abandoned`|Abandoned|
 
-Trash is not a task status. It is represented by `deleted\_at`. Trashed tasks are excluded from the All tab, its status chart, and automatic hints.
+Trash is not a task status. It is represented by `deleted_at`. Trashed tasks are excluded from the All tab, its status chart, and automatic hints.
 
 #### Automatic recognition and synchronization
 
@@ -82,7 +82,7 @@ Trash is not a task status. It is represented by `deleted\_at`. Trashed tasks ar
 
 Before each turn, the plugin can hint at most two already-engaged `active` tasks for the current session. The automatic hint contains only the task name, project, progress, and known pitfalls; **the full task archive is not automatically injected into context**.
 
-When the model determines that the current request belongs to a task, it can call `task\_inject`. The user can also click **Inject into current session** on a task card. The full archive is appended as a plugin-sourced user message and the task/session association is updated. Injecting another task switches the active task attribution for subsequent events.
+When the model determines that the current request belongs to a task, it can call `task_inject`. The user can also click **Inject into current session** on a task card. The full archive is appended as a plugin-sourced user message and the task/session association is updated. Injecting another task switches the active task attribution for subsequent events.
 
 #### Manual creation and extraction
 
@@ -158,18 +158,18 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 
 The sidebar **Memory** button opens the memory-management dialog. All memory data lives in a local SQLite store at `<profile>/.dsh-session-kit/memory.sqlite` (WAL mode) with no external dependencies; the core logic lives in `lib/memory.js`.
 
-* **Projects (memory\_directories)**: memories are grouped per project with a built-in protected `default` project (cannot be renamed or deleted); each project can carry a list of session IDs for which it is auto-enabled.
+* **Projects (memory_directories)**: memories are grouped per project with a built-in protected `default` project (cannot be renamed or deleted); each project can carry a list of session IDs for which it is auto-enabled.
 * **Memories (memories)**: a body plus a status (`active` memories participate in recall / `inactive` memories are archived only); the normalized body is hashed with SHA-256 as a unique key, which inherently prevents duplicate writes.
-* **Tags (memory\_tags / memory\_tag\_links)**: 13 preset tags (user profile, user preferences, project profile, project architecture, project constraints, module paths, project scenarios, module constraints, project summary, module summary, API summary, work projects, daily life) plus custom tags, all with instant activation toggles; each memory carries at most 12 tags.
-* **Session-project switches (memory\_session\_directories)**: records which projects each session has enabled.
-* **Settings (memory\_settings)**: auto-distill toggle, enable default for all sessions, per-turn project auto-matching, distill model override, recall mode and four-segment quotas, and the tokenizer version stamp.
-* **Activity log (memory\_activity\_logs)**: an audit trail of memory operations, retained for 7 days.
+* **Tags (memory_tags / memory_tag_links)**: 16 preset tags (user profile, user preferences, project profile, project architecture, project constraints, module paths, project scenarios, module constraints, project summary, module summary, API summary, work projects, daily life, interface constraints, exclude record, decision Record) plus custom tags, all with instant activation toggles; each memory carries at most 12 tags.
+* **Session-project switches (memory_session_directories)**: records which projects each session has enabled.
+* **Settings (memory_settings)**: auto-distill toggle, enable default for all sessions, per-turn project auto-matching, distill model override, recall mode and four-segment quotas, and the tokenizer version stamp.
+* **Activity log (memory_activity_logs)**: an audit trail of memory operations, retained for 7 days.
 
 #### Write paths
 
 Memories enter the store through three independent paths, ending in the persistent tables or the in-memory temporary pool:
 
-**1. Tool writes (agent-initiated)** — the LLM writes through the `memory\_add` / `memory\_update` tools:
+**1. Tool writes (agent-initiated)** — the LLM writes through the `memory_add` / `memory_update` tools:
 
 * The plugin validates synchronously and immediately returns `{accepted: true}`; the actual database write runs later in a FIFO background task queue — the tool result reaches the model first, and a failed write never interrupts the conversation (it is logged as a warning plus an activity-log entry, visible on the log page of the memory dialog);
 * The target project is resolved by priority: explicit ID > by name (created if missing) > the single project enabled for this session > content-based guessing when several are enabled > fall back to `default`;
@@ -223,6 +223,10 @@ When candidates are plentiful, total injection is a constant 20 hits. Component 
 
 Segment 2 is the **invisible-context compensation channel**: recent turns of this session are excluded until they leave the visible window (to avoid duplicating conversation history); only cross-session temporary memories and temporary memories from turns already swallowed by context compaction are admitted — the latter judged against the sequence number of the last compaction event. During packing, entries that no longer fit the character budget are skipped (order-preserving), and oversized memories are truncated with a marker.
 
+**Fixed recall**
+
+Each permanent memory has a 'fixed injection' switch. Once turned on, as long as the project that memory belongs to is activated in a session, that memory is guaranteed to be recalled.
+
 **Injection format**
 
 Hits are assembled into a single plugin-sourced user message inserted before the turn's user message: a numbered list (project / tags / update date + body) headed by the rule "when conflicting with the user's latest message, the user's message prevails". A snapshot of the hits (1:1 with the body) is persisted with the session events, powering the per-turn memory panel across restarts.
@@ -244,14 +248,14 @@ The plugin registers 5 memory tools for agents:
 
 |Tool|Purpose|Notes|
 |-|-|-|
-|`memory\_add`|Add a long-term memory|Background write; use only when the user explicitly asks to remember or the information clearly needs long-term retention|
-|`memory\_update`|Update body / tags / status / project|Background write|
-|`memory\_stop`|Deactivate a memory|Sets status to inactive: excluded from recall but kept in the store|
-|`memory\_read`|Read Memory|Read the full text of a memory|
-|`memory\_search`|Search the memory store on demand|Parses time expressions from the query (today / yesterday / the day before / last N days / this week / last week / this month / last month / exact dates); filters by project / tags / status; default 10 items, max 50|
-|`conversation\_search`|Search past conversations across sessions|Scans live and persisted session logs with line-level lexical scoring; subagent sessions are excluded by default|
+|`memory_add`|Add a long-term memory|Background write; use only when the user explicitly asks to remember or the information clearly needs long-term retention|
+|`memory_update`|Update body / tags / status / project|Background write|
+|`memory_stop`|Deactivate a memory|Sets status to inactive: excluded from recall but kept in the store|
+|`memory_read`|Read Memory|Read the full text of a memory|
+|`memory_search`|Search the memory store on demand|Parses time expressions from the query (today / yesterday / the day before / last N days / this week / last week / this month / last month / exact dates); filters by project / tags / status; default 10 items, max 50|
+|`conversation_search`|Search past conversations across sessions|Scans live and persisted session logs with line-level lexical scoring; subagent sessions are excluded by default|
 
-Repeated `memory\_search` / `conversation\_search` calls with identical arguments within the same turn are intercepted directly, telling the model to reuse the previous result.
+Repeated `memory_search` / `conversation_search` calls with identical arguments within the same turn are intercepted directly, telling the model to reuse the previous result.
 
 #### Supporting mechanisms
 

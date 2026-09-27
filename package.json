@@ -1,8 +1,8 @@
 {
   "name": "dsh-session-kit",
-  "version": "2.7.0",
+  "version": "3.0.0",
   "license": "MIT",
-  "description": "DeepSeek Harness sessions kit,with a lightweight memory system and other handy features.",
+  "description": "DeepSeek Harness sessions kit, with a lightweight memory system and other handy features.",
   "keywords": [
     "deepseek",
     "deepseek-harness",
