@@ -1,6 +1,6 @@
 # dsh-session-kit
 
-[!\[](https://img.shields.io/badge/DeepSeek%20Harness->=0.1.7-brightgreen?labelColor=4D6BFE)](https://github.com/deepseek-ai/deepseek-harness) [!\[](https://badgen.net/npm/dt/dsh-session-kit)](https://www.npmjs.com/package/dsh-session-kit)
+[![](https://img.shields.io/badge/DeepSeek%20Harness->=0.1.7-brightgreen?labelColor=4D6BFE)](https://github.com/deepseek-ai/deepseek-harness) [![](https://badgen.net/npm/dt/dsh-session-kit)](https://www.npmjs.com/package/dsh-session-kit)
 
 English | [中文](README.md)
 
