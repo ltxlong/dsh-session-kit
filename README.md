@@ -1,6 +1,6 @@
 # dsh-session-kit
 
-[![](https://img.shields.io/badge/DeepSeek%20Harness->=0.1.7-brightgreen?labelColor=4D6BFE)](https://github.com/deepseek-ai/deepseek-harness) [![](https://badgen.net/npm/dt/dsh-session-kit)](https://www.npmjs.com/package/dsh-session-kit)
+[![](https://img.shields.io/badge/DeepSeek%20Harness->=0.2.0-brightgreen?labelColor=4D6BFE)](https://github.com/deepseek-ai/deepseek-harness) [![](https://badgen.net/npm/dt/dsh-session-kit)](https://www.npmjs.com/package/dsh-session-kit)
 
 [English](README.en.md) | 中文
 
@@ -34,7 +34,6 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6dc222a0-f432-4c93-a132-6886c98aeb33" />
-
 
 ## 功能概览
 
@@ -190,7 +189,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 
 #### 召回管线
 
-召回挂载在每轮请求前（`agent/pre-step`），以本轮用户输入为查询自动执行，总预算 30s。默认最多 20 条；也可以选择“临时记忆不参与召回”（最多 15 条）或自定义 8~20 条。自定义时段1为 3~5 条、段2为 0~5 条、段3为 0~5 条，段4动态等于总数减去前3段且至少 3 条；当总数不超过15条时段2强制为0，当总数不超过10条时段3强制为0；四段配额之和等于最多召回数量。
+召回挂载在每轮请求前（`agent/pre-step`），以本轮用户输入为查询自动执行，总预算 30s。默认最多 20 条；也可以选择“临时记忆不参与召回”（最多 15 条）或自定义 8-20 条。自定义时段1为 3-5 条、段2为 0-5 条、段3为 0-5 条，段4动态等于总数减去前3段且至少 3 条；当总数不超过15条时段2强制为0，当总数不超过10条时段3强制为0；四段配额之和等于最多召回数量。
 
 **预处理**
 

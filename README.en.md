@@ -1,6 +1,6 @@
 # dsh-session-kit
 
-[![](https://img.shields.io/badge/DeepSeek%20Harness->=0.1.7-brightgreen?labelColor=4D6BFE)](https://github.com/deepseek-ai/deepseek-harness) [![](https://badgen.net/npm/dt/dsh-session-kit)](https://www.npmjs.com/package/dsh-session-kit)
+[![](https://img.shields.io/badge/DeepSeek%20Harness->=0.2.0-brightgreen?labelColor=4D6BFE)](https://github.com/deepseek-ai/deepseek-harness) [![](https://badgen.net/npm/dt/dsh-session-kit)](https://www.npmjs.com/package/dsh-session-kit)
 
 English | [中文](README.md)
 
@@ -32,7 +32,7 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/8fca256c-8a6e-4820-a026-00fc013264d7" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
-<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/03d190be-c420-4714-a593-cf2808c909c2" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6dc222a0-f432-4c93-a132-6886c98aeb33" />
 
 ## Features
 
