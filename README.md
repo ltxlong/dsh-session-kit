@@ -35,7 +35,6 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/03d190be-c420-4714-a593-cf2808c909c2" />
 
-
 ## 功能概览
 
 ### 会话管理菜单
