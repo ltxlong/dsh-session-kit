@@ -33,6 +33,8 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/8fca256c-8a6e-4820-a026-00fc013264d7" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
+<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/03d190be-c420-4714-a593-cf2808c909c2" />
+
 
 ## 功能概览
 
