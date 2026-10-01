@@ -1,8 +1,8 @@
 {
   "name": "dsh-session-kit",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "license": "MIT",
-  "description": "DeepSeek Harness sessions kit, with a lightweight memory system and other handy features.",
+  "description": "会话管理菜单、归档管理、轮次级删除、重新生成、记忆管理、任务管理、话题导航。Conversation management menu, archive management, round-level deletion, regeneration, memory management, task management, topic navigation.",
   "keywords": [
     "deepseek",
     "deepseek-harness",
