@@ -55,7 +55,7 @@ The plugin adds a **Session manager** button to the conversation header. The men
 
 ### Task management and task archives
 
-Task management records a task end to end: subtasks, tool operations, observed files, pitfalls, and participating sessions. It shares the local SQLite database with memory management at `<profile>/.dsh-session-kit/memory.sqlite`.
+Task management records a task end to end: subtasks, tool operations, observed files, pitfalls, and participating sessions. It shares one local SQLite database with memory management (default `<profile>/.dsh-session-kit/memory.sqlite`, following the memory storage directory setting).
 
 #### Task statuses
 
@@ -157,14 +157,17 @@ Every conversation page gets a right-side **Topics** navigator inspired by `chat
 
 ### Memory management and recall
 
-The sidebar **Memory** button opens the memory-management dialog. All memory data lives in a local SQLite store at `<profile>/.dsh-session-kit/memory.sqlite` (WAL mode) with no external dependencies; the core logic lives in `lib/memory.js`.
+The sidebar **Memory** button opens the memory-management dialog. All memory data lives in a local SQLite store (WAL mode) with no external dependencies; the core logic lives in `lib/memory.js`. The default location is `<profile>/.dsh-session-kit/memory.sqlite`, and the settings page can switch it to any absolute custom directory (stored in the storage domain; a restart is required for the change to take effect).
 
 * **Projects (memory_directories)**: memories are grouped per project with a built-in protected `default` project (cannot be renamed or deleted); each project can carry a list of session IDs for which it is auto-enabled.
-* **Memories (memories)**: a body plus a status (`active` memories participate in recall / `inactive` memories are archived only); the normalized body is hashed with SHA-256 as a unique key, which inherently prevents duplicate writes.
-* **Tags (memory_tags / memory_tag_links)**: 16 preset tags (user profile, user preferences, project profile, project architecture, project constraints, module paths, project scenarios, module constraints, project summary, module summary, API summary, work projects, daily life, interface constraints, exclude record, decision Record) plus custom tags, all with instant activation toggles; each memory carries at most 12 tags.
+* **Memories (memories)**: a body plus a status (`active` memories participate in recall / `inactive` memories are archived only); the normalized body is hashed with SHA-256 as a unique key, which inherently prevents duplicate writes; the `pinned` flag marks fixed recall.
+* **Tags (memory_tags / memory_tag_links)**: 16 preset tags (user profile, user preferences, project profile, project architecture, project constraints, module paths, project scenarios, module constraints, project summary, module summary, API summary, interface constraints, troubleshooting records, decision records, work projects, daily life) plus custom tags, all with instant activation toggles; each memory carries at most 12 tags. Custom tags are the source of the `customTag` recall weight.
 * **Session-project switches (memory_session_directories)**: records which projects each session has enabled.
-* **Settings (memory_settings)**: auto-distill toggle, enable default for all sessions, per-turn project auto-matching, distill model override, recall mode and four-segment quotas, and the tokenizer version stamp.
+* **Settings (memory_settings)**: auto-distill toggle, enable default for all sessions, per-turn project auto-matching, distill model override, recall mode and four-segment quotas, the tokenizer version stamp, and the embedding switch plus provider configuration.
 * **Activity log (memory_activity_logs)**: an audit trail of memory operations, retained for 7 days.
+* **Revision history (memory_revisions)**: old body snapshots are kept automatically when a memory is rewritten, and can be reviewed, restored, or deleted.
+* **Relation edges (memory_edges / memory_edge_keys)**: associations between memories derived from the `位置`/`对象` fields of structured bodies (with an inverted key table for fast lookup), queried by `memory_relate`.
+* **Memory vectors (memory_embeddings)**: optional semantic-search vectors, kept in their own table so the 4KB-per-row BLOBs never slow down ordinary queries.
 
 #### Write paths
 
@@ -174,16 +177,18 @@ Memories enter the store through three independent paths, ending in the persiste
 
 * The plugin validates synchronously and immediately returns `{accepted: true}`; the actual database write runs later in a FIFO background task queue — the tool result reaches the model first, and a failed write never interrupts the conversation (it is logged as a warning plus an activity-log entry, visible on the log page of the memory dialog);
 * The target project is resolved by priority: explicit ID > by name (created if missing) > the single project enabled for this session > content-based guessing when several are enabled > fall back to `default`;
-* When no tags are provided, the program classifies the body by keyword patterns (8 Chinese regex groups) and falls back to "work projects"; tags are restricted to the preset whitelist so the model cannot invent arbitrary ones.
+* **Conflict adjudication before writing**: the program first searches the same project for similar existing memories (top 3) and, when candidates exist, asks the model to judge the relation — `update` rewrites an existing memory (keeping a revision automatically), `skip` treats the new body as semantically equivalent and adds nothing, and `add` proceeds with a new memory. When adjudication fails or finds no candidate it falls back to `add`, recording the missed reason in the activity log so you can later tell why that add was not deduplicated;
+* Tags have three levels of precedence: tags given explicitly by the model > the fallback used when the user explicitly asked to remember (user preferences) > automatic keyword classification (Chinese regex), falling back to "work projects". Preset tags must match the whitelist so the model cannot invent plausible-looking stable tags, while descriptive tags are stored as custom tags with no whitelist filtering.
 
 **2. Manual writes from the UI** — create, edit, delete, and cross-project moves in the memory dialog execute synchronously and are logged; "store" promotes a temporary memory into the persistent tables and removes it from the temporary pool.
 
 **3. Distillation (automatic)** — triggered when a turn ends normally (`turn/end` with reason completed) while auto-distill is on, queued serially per session:
 
-* The full transcript of the turn (user / assistant / tool calls / tool results) is extracted;
-* The session's model (or the distill model override from settings, with automatic fallback to the default route) outputs fixed JSON: `{"位置":\[…],"对象":\[…],"内容":"…","踩坑":"…"}`; the English aliases `paths` / `symbols` / `content` / `pitfall` are also accepted, and tags are classified by the program from the body rather than model output;
+* The transcript of the turn is extracted (user / assistant / tool-call requests, **excluding tool result bodies**), together with path candidates (files read or written, grep targets) and symbol candidates (symbols found by grep, annotated with definition/call cues) offered to the model as references;
+* The session's model (or the distill model override from settings, with automatic fallback to the default route) outputs fixed JSON: `{"位置":\[…],"对象":\[…],"内容":"…","踩坑":"…","tags":\[…]}`; the English aliases `paths` / `symbols` / `content` / `pitfall` / `tags` are also accepted. Tags follow the two-stage scheme (1-2 descriptive tags first, then mapped onto stable tags); the program only cleans and tiers them and never overrides the model's result;
 * Content involving code, paths, or APIs is stored as the structured JSON format; paths and symbols are string arrays, content and pitfall may contain newlines, and unknown fields are preserved for future extension;
-* Distilled output first lands in the **temporary memory pool** (in memory, not persisted): valid structured JSON bodies are activated immediately, plain bodies stay deactivated until manually confirmed; duplicates against the persistent store or the pool are merged automatically;
+* Distilled output first lands in the **temporary memory pool** (in memory, not persisted), always created as `active`; duplicates against the persistent store or the pool are merged automatically (an identical entry in the pool only refreshes its timestamp and source turn instead of being added again);
+* Only `text` blocks count as the distillation result, with **no fallback to `reasoning`** (otherwise reasoning drafts would be stored as memory bodies); a turn with no usable output is skipped and logged;
 * Temporary memories carry source-session and source-turn metadata, used for cross-session compensation during recall (see below).
 
 #### Recall pipeline
@@ -200,6 +205,8 @@ Recall is mounted before every turn request (`agent/pre-step`) and runs automati
 * Primary path: FTS5 + BM25. Chinese tokenization combines jieba tokens ∪ adjacent CJK bigrams ∪ alphanumeric runs into a derived token column; if jieba fails to load, the pipeline degrades to bigrams only;
 * Fallback: when FTS is unavailable or yields nothing, a scored substring scan takes over;
 * Supplementary: memories whose custom tag names match query terms enter directly;
+* Base-pool direct read: memories carrying a tier-1 stable tag are pulled in by tag name without FTS or relevance admission;
+* Vector channel (optional, off by default): cosine similarity between the query vector and stored vectors, dropping any candidate below 0.65;
 * Query profiles: the query is classified by regex into one of six profiles (general / code / scenario / constraint / profile / summary), each with its own tag-weight table;
 * Candidate admission (any of three): BM25 hit / custom tag hit / profile tag hit.
 
@@ -211,28 +218,33 @@ Candidates are split into a base pool (any tier-1 stable tag: user preferences, 
 |-|-|-|-|
 |1 Base|Default 5; custom 3-5|Base pool|BM25 + custom tag + profile tag + structure score (tier-1) + recency|
 |2 Temporary|Default 5; excluded mode 0; custom 0-5|Temporary pool|BM25 + custom tag + profile tag|
-|3 Mixed|Default 5; custom 0-5|Base remainder + regular pool|All components (both structure tiers, preventing tag-tier inversion)|
-|4 Fallback|Calculated, minimum 3|Regular pool remainder|Total − segments 1-3; absorbs upstream shortages|
+|3 Mixed|Default 5; custom 0-5|Base remainder + regular pool|All components (both structure tiers plus vector, preventing tag-tier inversion)|
+|4 Fallback|Calculated, minimum 3|Regular pool remainder|Total − segments 1-3; absorbs upstream shortages; no tier-1 structure score|
+
+Each segment sums its own component matrix. Segment 1 first admits by relevance and, when seats remain, fills them tag by tag in priority order (user profile → project profile → project architecture → user preferences → module paths → project constraints). The segment label (bottom / ephemeral / mixed / fallback / pinned) is frozen into the injection snapshot, so the same memory can land in different segments on different turns.
 
 When candidates are plentiful, total injection is a constant 20 hits. Component semantics:
 
 * **BM25**: FTS relevance (0–8 points);
 * **Custom tag**: exact/partial match between the query and custom tag names (exact 16, partial 7, capped at 28);
 * **Profile tag**: tag weight under the detected query profile (capped at 4.5);
-* **Structure score** (query-independent identity score): each tier-1 tag adds +5, capped at 20 (4 tags saturate); each tier-2 tag (project scenarios, module constraints, project summary, module summary, API summary) adds +3, capped at 6; the two tiers accumulate independently;
+* **Structure score** (query-independent identity score): each tier-1 tag adds +5, capped at 20 (4 tags saturate); each tier-2 tag (project scenarios, module constraints, project summary, module summary, API summary, interface constraints, decision records) adds +3, capped at 6; the two tiers accumulate independently. The tier switches automatically with vector availability: the full values apply when vectors are unavailable (structure alone carries identity ranking), and drop to +2 / cap 8 once vectors work, handing the say back to query-relevance signals;
+* **Vector**: cosine similarity mapped to 0–10 points (the same order of magnitude as BM25, below custom tags); excluded from segment 1, which is the query-independent identity channel;
 * **Recency decay** (tiered by the memory's tag tier): tier-1 ≤30 days 1.2 / ≤120 days 0.9 / older 0.55 floor (never reaches zero); tier-2 ≤7 days 1.1 → 0.25 floor; non-stable tiers decay to zero beyond 120 days.
 
 Segment 2 is the **invisible-context compensation channel**: recent turns of this session are excluded until they leave the visible window (to avoid duplicating conversation history); only cross-session temporary memories and temporary memories from turns already swallowed by context compaction are admitted — the latter judged against the sequence number of the last compaction event. During packing, entries that no longer fit the character budget are skipped (order-preserving), and oversized memories are truncated with a marker.
 
 **Fixed recall**
 
-Each permanent memory has a 'fixed injection' switch. Once turned on, as long as the project that memory belongs to is activated in a session, that memory is guaranteed to be recalled.
+Each permanent memory has a 'fixed injection' switch. Once turned on, as long as the project that memory belongs to is activated in a session, that memory is guaranteed to be recalled. A fixed memory is still an ordinary memory: it competes in the four segments as usual without taking extra seats, and only those that miss every candidate channel are merged in after the four-segment selection. As a result the final injection may exceed the recall limit, which constrains the four-segment selection rather than the final count. Fixed memories are listed first so the model reads them early.
 
 **Injection format**
 
-Hits are assembled into a single plugin-sourced user message inserted before the turn's user message: a numbered list (project / tags / update date + body) headed by the rule "when conflicting with the user's latest message, the user's message prevails". A snapshot of the hits (1:1 with the body) is persisted with the session events, powering the per-turn memory panel across restarts.
+Hits are assembled into a single plugin-sourced user message inserted before the turn's user message: a numbered list (project / tags / update date + body) headed by the rule "when conflicting with the user's latest message, the user's message prevails", with fixed-recall entries additionally tagged 【固定召回】. A snapshot of the hits (1:1 with the body) is persisted with the session events, powering the per-turn memory panel across restarts.
 
-For structured memories, only the `content` field is limited to 500 characters during injection; paths, symbols, pitfall, and unknown fields are preserved. (If it exceeds the limit, it will be truncated and you'll be prompted to check the full text using the memory tool)
+For structured memories, only the `content` field is limited to 500 characters during injection; paths, symbols, pitfall, and unknown fields are preserved. When it exceeds the limit, `content` is truncated and a marker is appended: "this memory is truncated · id: … · call the memory_read tool for the full text".
+
+Beyond automatic recall, you can also inject a specific memory into the current session by hand from the memory dialog (through a separate source kind that bypasses recall and ejection), useful for putting one memory in front of the model temporarily.
 
 #### Diff-based ejection
 
@@ -245,15 +257,16 @@ Injected memories do not occupy the context forever. After each normal recall, a
 
 #### Memory tools
 
-The plugin registers 5 memory tools for agents:
+The plugin registers 7 memory tools for agents:
 
 |Tool|Purpose|Notes|
 |-|-|-|
-|`memory_add`|Add a long-term memory|Background write; use only when the user explicitly asks to remember or the information clearly needs long-term retention|
-|`memory_update`|Update body / tags / status / project|Background write|
+|`memory_add`|Add a long-term memory|Background write with conflict adjudication and hash dedup; use only when the user explicitly asks to remember or the information clearly needs long-term retention|
+|`memory_update`|Update body / tags / status / project|Background write; can toggle fixed recall, and rewriting the body keeps a revision automatically|
 |`memory_stop`|Deactivate a memory|Sets status to inactive: excluded from recall but kept in the store|
 |`memory_read`|Read Memory|Read the full text of a memory|
-|`memory_search`|Search the memory store on demand|Parses time expressions from the query (today / yesterday / the day before / last N days / this week / last week / this month / last month / exact dates); filters by project / tags / status; default 10 items, max 50|
+|`memory_search`|Search the memory store on demand|Parses time expressions from the query (today / yesterday / the day before / last N days / this week / last week / this month / last month / exact dates); filters by project / tags / status; default 10 items, max 50; results are rendered as related clusters built from relation edges|
+|`memory_relate`|Explore structural links between memories|Starting from one memory, follows shared file paths / symbols to related memories (1 hop by default, up to 2); takes either `memoryId` or `query`. Complements `memory_search`: search matches by wording, relate matches by shared files or symbols|
 |`conversation_search`|Search past conversations across sessions|Scans live and persisted session logs with line-level lexical scoring; subagent sessions are excluded by default|
 
 Repeated `memory_search` / `conversation_search` calls with identical arguments within the same turn are intercepted directly, telling the model to reuse the previous result.
@@ -261,8 +274,12 @@ Repeated `memory_search` / `conversation_search` calls with identical arguments 
 #### Supporting mechanisms
 
 * **FTS index lifecycle**: the tokenization pipeline is recorded as a version stamp in settings; on version changes (e.g. jieba availability switching) or row-count mismatches, a background batched rebuild starts (200 rows per batch, non-blocking, with substring fallback serving recall meanwhile); structural changes such as project renames or tag edits also trigger rebuilds; single-row writes during a rebuild are parked and replayed at finalization.
+* **Relation-edge lifecycle**: writing a memory extracts keys from its structured body (file paths normalized to lowercase, symbols lowercased), registers them in the inverted key table, and links edges both ways; stores of at most 1000 memories rebuild synchronously at startup (about 18ms measured), larger ones rebuild in the background (200 rows per batch, each finishing within a frame), and `memory_relate` reports a clear degradation while a rebuild runs. Tag edges are off by default (measured at roughly 9:1 against structural edges, which would drown them out) and can be enabled in settings.
+* **Vector backfill**: once embedding search is enabled, memories missing a vector are backfilled in the background (128 per batch) without blocking startup, with recall using pure lexical matching meanwhile; changing the model or dimensions keeps old vectors in place and recomputes through the model fingerprint, so an interrupted backfill resumes on the next start. The embedding input fingerprint covers tags and project name too — comparing the body hash alone would miss "body unchanged but tags changed".
 * **Activity log**: covers all memory adds/updates/deletes, distillation (tool / auto / manual triggers), project and tag operations, and promotions; failures are recorded with a dedicated reason; entries are retained for 7 days and cleaned up once at startup; escaped in-progress activities older than 6 minutes are reaped as failures by a fallback sweep, so the "in progress" list can never get stuck.
-* **Recall panel**: each turn can expand a panel showing the memories actually carried in that turn's context (computed by replaying the session log; weak turns naturally inherit the background injection); injected snapshots persist across restarts, and later edits or deletions of memories do not alter past turns.
+* **Revision history**: rewriting a memory body automatically keeps the previous snapshot (including status and replacement origin), which can be reviewed, restored, or deleted per memory; each memory keeps a bounded number of revisions (50 by default, evicting the oldest beyond that).
+* **Recall panel**: each turn can expand a panel showing the memories actually carried in that turn's context (computed by replaying the session log; weak turns naturally inherit the background injection); injected snapshots persist across restarts, and later edits or deletions of memories do not alter past turns. The panel also marks whether an entry was newly recalled this turn or already present last turn, and which segment it came from.
+* **Session "Memory" view**: a new Memory tab in the conversation view shows this session's injections in three columns (fixed / automatic / manual), with a donut chart of the latest turn's composition (fixed vs automatic share) and keyword filtering. It shares the recall panel's data source (the same session-log replay), so it recomputes fully after a restart with no extra storage. The tab can be hidden in settings.
 
 ## Files
 
@@ -276,7 +293,7 @@ Repeated `memory_search` / `conversation_search` calls with identical arguments 
 ## Notes and limits
 
 * The plugin does not patch DSH core packages; the global prompt is registered at runtime through `systemPrompt.section()`, and the compaction threshold does not write official or user Agent preset files, so disabling/uninstalling the plugin restores the original DSH system prompt and compaction config.
-* The memory store is a local SQLite file (`<profile>/.dsh-session-kit/memory.sqlite`); deleting projects or memories cannot be undone, and uninstalling the plugin does not remove the memory store file.
+* The memory store is a local SQLite file (default `<profile>/.dsh-session-kit/memory.sqlite`, configurable to a custom directory in settings); deleting projects or memories cannot be undone (rewriting a body keeps a revision, deleting a memory does not), and uninstalling the plugin does not remove the memory store file.
 * Whole-session deletion is disabled while a session is running.
 * Turn deletion/regeneration is intentionally conservative and may refuse unsafe or compacted histories.
 * Regeneration only replays a single plain-text user prompt from the selected turn.
