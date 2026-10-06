@@ -206,30 +206,41 @@ Recall is mounted before every turn request (`agent/pre-step`) and runs automati
 * Fallback: when FTS is unavailable or yields nothing, a scored substring scan takes over;
 * Supplementary: memories whose custom tag names match query terms enter directly;
 * Base-pool direct read: memories carrying a tier-1 stable tag are pulled in by tag name without FTS or relevance admission;
-* Vector channel (optional, off by default): cosine similarity between the query vector and stored vectors, dropping any candidate below 0.65;
+* Vector channel (optional, off by default): cosine similarity between the query vector and stored vectors, dropping any candidate below 0.65. That threshold only governs whether the vector becomes a *candidate*; it is separate from the vector gate described below;
 * Query profiles: the query is classified by regex into one of six profiles (general / code / scenario / constraint / profile / summary), each with its own tag-weight table;
 * Candidate admission (any of three): BM25 hit / custom tag hit / profile tag hit.
 
-**Four-segment selection (v9)**
+**Four-segment selection**
 
-Candidates are split into a base pool (any tier-1 stable tag: user preferences, user profile, project profile, project architecture, project constraints, module paths) and a regular pool; each segment then competes with its own scoring matrix:
+Candidates are split into a base pool (any tier-1 stable tag: user preferences, user profile, project profile, project architecture, project constraints, module paths) and a regular pool; each segment then selects with its own ranking and admission rules:
 
-|Segment|Seats|Members|Score components|
+|Segment|Seats|Members|Ranking and admission|
 |-|-|-|-|
-|1 Base|Default 5; custom 3-5|Base pool|BM25 + custom tag + profile tag + structure score (tier-1) + recency|
-|2 Temporary|Default 5; excluded mode 0; custom 0-5|Temporary pool|BM25 + custom tag + profile tag|
-|3 Mixed|Default 5; custom 0-5|Base remainder + regular pool|All components (both structure tiers plus vector, preventing tag-tier inversion)|
-|4 Fallback|Calculated, minimum 3|Regular pool remainder|Total − segments 1-3; absorbs upstream shortages; no tier-1 structure score|
+|1 Base|Default 5; custom 3-5|Base pool|**RRF ranking** (lexical + vector + tag lists); admission keeps the three-way relevance rule, and remaining seats are filled tag by tag in priority order. The **vector gate applies, the BM25 floor does not** — segment 1 is the identity channel, whose members are largely query-independent, so their BM25 scores are naturally low and a lexical floor would wipe the identity floor out|
+|2 Temporary|Default 5; excluded mode 0; custom 0-5|Temporary pool|Keeps the v9 additive matrix (BM25 + custom tag + profile tag). Temporary memories are never persisted, carry no vectors, and their tags are always preset ones, so only the lexical list exists and RRF would degenerate to lexical order anyway|
+|3 Mixed|Default 5; custom 0-5|Base remainder + regular pool|**RRF ranking**; admission = **BM25 ≥ 6 AND cosine ≥ 0.30** (both must pass)|
+|4 Fallback|Calculated, minimum 3|Regular pool remainder|**RRF ranking**; admission same as segment 3; absorbs upstream shortages naturally|
 
-Each segment sums its own component matrix. Segment 1 first admits by relevance and, when seats remain, fills them tag by tag in priority order (user profile → project profile → project architecture → user preferences → module paths → project constraints). The segment label (bottom / ephemeral / mixed / fallback / pinned) is frozen into the injection snapshot, so the same memory can land in different segments on different turns.
+The two admission gates for segments 3/4 (added in v10 — previously these two segments only competed inside their pools with no admission rule at all, so weakly-matching candidates still took seats):
 
-When candidates are plentiful, total injection is a constant 20 hits. Component semantics:
+* **BM25 floor (lexical)**: `bm25Weight ≥ 6` on the 0–8 scale (the "strong match" line). It only applies to rows that actually carry FTS information; rows without an FTS hit are left to the vector gate;
+* **Vector gate (semantic)**: cosine similarity `≥ 0.30`. A candidate must pass both gates to take a seat in segment 3 or 4;
+* **Degradation safety**: when embeddings are off, fail to initialize, a memory has no vector yet, or a score is malformed, the vector gate **admits everything** (better to over-admit than to block all). The BM25 floor is independent of embeddings and always applies.
+
+RRF (Reciprocal Rank Fusion) fuses the three ranked lists by position only, never by raw score, so no manual weighting across incompatible scales is needed:
+
+* Three lists: lexical (BM25 weight), vector (cosine), and custom-tag match strength (weight 0.5, as a supporting signal);
+* Smoothing constant `k = 10`: RRF accumulates `1/(k + rank)` per list, so `k` only sets how strongly a top rank is favoured (smaller `k` favours the head, larger `k` flattens rank differences). It **never changes the order within a list**;
+* Identity and recency scores become a **±10% multiplicative boost** — they nudge positions but can never override relevance consensus;
+* With embeddings off, the vector list is simply empty and RRF degrades to a two-list lexical + tag fusion; ranking still works.
+
+Component semantics:
 
 * **BM25**: FTS relevance (0–8 points);
 * **Custom tag**: exact/partial match between the query and custom tag names (exact 16, partial 7, capped at 28);
 * **Profile tag**: tag weight under the detected query profile (capped at 4.5);
 * **Structure score** (query-independent identity score): each tier-1 tag adds +5, capped at 20 (4 tags saturate); each tier-2 tag (project scenarios, module constraints, project summary, module summary, API summary, interface constraints, decision records) adds +3, capped at 6; the two tiers accumulate independently. The tier switches automatically with vector availability: the full values apply when vectors are unavailable (structure alone carries identity ranking), and drop to +2 / cap 8 once vectors work, handing the say back to query-relevance signals;
-* **Vector**: cosine similarity mapped to 0–10 points (the same order of magnitude as BM25, below custom tags); excluded from segment 1, which is the query-independent identity channel;
+* **Vector**: cosine similarity. In segment 2's additive matrix it maps to 0–10 points (the same order of magnitude as BM25, below custom tags); segments 1/3/4 now use RRF, where cosine contributes as a *rank* and additionally serves as the gate for those segments;
 * **Recency decay** (tiered by the memory's tag tier): tier-1 ≤30 days 1.2 / ≤120 days 0.9 / older 0.55 floor (never reaches zero); tier-2 ≤7 days 1.1 → 0.25 floor; non-stable tiers decay to zero beyond 120 days.
 
 Segment 2 is the **invisible-context compensation channel**: recent turns of this session are excluded until they leave the visible window (to avoid duplicating conversation history); only cross-session temporary memories and temporary memories from turns already swallowed by context compaction are admitted — the latter judged against the sequence number of the last compaction event. During packing, entries that no longer fit the character budget are skipped (order-preserving), and oversized memories are truncated with a marker.
@@ -274,7 +285,7 @@ Repeated `memory_search` / `conversation_search` calls with identical arguments 
 #### Supporting mechanisms
 
 * **FTS index lifecycle**: the tokenization pipeline is recorded as a version stamp in settings; on version changes (e.g. jieba availability switching) or row-count mismatches, a background batched rebuild starts (200 rows per batch, non-blocking, with substring fallback serving recall meanwhile); structural changes such as project renames or tag edits also trigger rebuilds; single-row writes during a rebuild are parked and replayed at finalization.
-* **Relation-edge lifecycle**: writing a memory extracts keys from its structured body (file paths normalized to lowercase, symbols lowercased), registers them in the inverted key table, and links edges both ways; stores of at most 1000 memories rebuild synchronously at startup (about 18ms measured), larger ones rebuild in the background (200 rows per batch, each finishing within a frame), and `memory_relate` reports a clear degradation while a rebuild runs. Tag edges are off by default (measured at roughly 9:1 against structural edges, which would drown them out) and can be enabled in settings.
+* **Relation-edge lifecycle**: writing a memory extracts keys from its structured body (file paths normalized to lowercase, symbols lowercased), registers them in the inverted key table, and links edges both ways; stores of at most 1000 memories rebuild synchronously at startup, larger ones rebuild in the background (200 rows per batch), and `memory_relate` reports a clear degradation while a rebuild runs. Tag edges are off by default (tag edges far outnumber structural ones and would drown them out) and can be enabled in settings.
 * **Vector backfill**: once embedding search is enabled, memories missing a vector are backfilled in the background (128 per batch) without blocking startup, with recall using pure lexical matching meanwhile; changing the model or dimensions keeps old vectors in place and recomputes through the model fingerprint, so an interrupted backfill resumes on the next start. The embedding input fingerprint covers tags and project name too — comparing the body hash alone would miss "body unchanged but tags changed".
 * **Activity log**: covers all memory adds/updates/deletes, distillation (tool / auto / manual triggers), project and tag operations, and promotions; failures are recorded with a dedicated reason; entries are retained for 7 days and cleaned up once at startup; escaped in-progress activities older than 6 minutes are reaped as failures by a fallback sweep, so the "in progress" list can never get stuck.
 * **Revision history**: rewriting a memory body automatically keeps the previous snapshot (including status and replacement origin), which can be reviewed, restored, or deleted per memory; each memory keeps a bounded number of revisions (50 by default, evicting the oldest beyond that).
