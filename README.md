@@ -25,15 +25,36 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 如果更新了dsh版本0.1.5导致出现会话加载失败报错，比如：历史加载失败 @deepseek-ai/dsh-session-format-v0-to-v1 refuses this format v0 Session，
 解决方法是：“会话管理”->“修复会话”-> 点击“修复”按钮即可修复当前会话
 
+## 功能特点
+
+- 删除会话到系统回收站，包括子代理的会话日志
+- 轮次级删除对话（直接删除到最新对话）
+- 刷新对话（删除 + 重新发送）
+- 编辑对话（删除 + 编辑 + 重新发送）
+- 左右导航（左导航是对话内层级导航，右导航是对话导航，都支持开启/关闭）
+- 可以新增自定义全局提示词
+- 可以调整上下文压缩配置参数
+- 透明记忆功能，可以设置自定义记忆格式和固定召回，自动召回功能可以手动关闭
+- 临时记忆可以手动转为永久记忆，会话不会召回自己生成的临时记忆，跨会话可以召回
+- 记忆召回分为固定召回、自动召回、手动召回，每轮对话都可以看到上下文中的记忆快照
+- 任务管理-作为记忆功能的扩展，跨会话使用
+
 ## 示例
 
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/ffe483c4-08d2-4a1b-af51-c0694d323670" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/9009088c-24f1-4b71-af21-320f2d8571fb" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/4b68424a-7ddc-4db3-b862-5abd7ee279ae" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/2663c8be-ab4a-4339-92eb-d67793be1b0f" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/8fca256c-8a6e-4820-a026-00fc013264d7" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
+<img width="1712" height="1283" alt="image" src="https://github.com/user-attachments/assets/21a7646c-0cbe-4f3c-98c9-fb056119b19e" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
-<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6dc222a0-f432-4c93-a132-6886c98aeb33" />
+<img width="1366" height="1212" alt="image" src="https://github.com/user-attachments/assets/ddb056c1-fc84-4316-a803-c8eed0636115" />
+<img width="1350" height="1205" alt="image" src="https://github.com/user-attachments/assets/f54974fe-1bfe-40b6-b603-fcf4c2362f4f" />
+<img width="1362" height="1200" alt="image" src="https://github.com/user-attachments/assets/e02e1e68-c3cf-4823-ab0f-c049bc2f4e1c" />
+
+<details>
+<summary>点击查看详细说明</summary>
 
 ## 功能概览
 
@@ -326,7 +347,7 @@ RRF（Reciprocal Rank Fusion）把三路名单按名次融合，只吃名次、�
 * 重新生成只支持重放选中轮次中唯一的纯文本用户提问。
 * 即使 active surface 已不再显示被删除内容，原始 append-only 事件仍然保留在会话日志中。
 
-
+</details>
 
 ## License
 
