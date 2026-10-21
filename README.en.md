@@ -8,6 +8,10 @@ English | [中文](README.md)
 
 ## Install
 
+### Install from the dsh desktop version (recommended):
+
+Directly enter the plugin name dsh-session-kit to install
+
 ### From npm (recommended):
 
 ```
@@ -35,6 +39,7 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 - Adjustable context compression configuration parameters
 - Archive conversation quick preview and recovery
 - Transparent memory function, allowing custom memory formats and fixed recall; automatic recall can be manually turned off
+- When generating memories, it will automatically recognize based on the name of the activated memory format, which has built-in code-type memory formats
 - Temporary memory can be manually converted to permanent memory; a conversation will not recall its own generated temporary memory, but cross-conversation recall is possible
 - Memory recall is divided into fixed recall, automatic recall, and manual recall; each round of conversation can display memory snapshots from the context
 - Task management – as an extension of the memory function, usable across conversations
