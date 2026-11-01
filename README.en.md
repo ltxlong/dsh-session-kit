@@ -308,6 +308,17 @@ Injected memories do not occupy the context forever. After each normal recall, a
 * **Weak-input protection**: weak inputs (short continuations like "continue" or "ok", bare numbers/units/code snippets) make recall unreliable, so such turns skip ejection entirely and never touch the context, preventing accidental ejection of active-topic memories;
 * **Multi-step turns**: in-step recall inputs differ from the turn input, so ejection is skipped as well.
 
+#### Instant compaction restore
+
+Context compaction shadows the injected memory rows together with the old context (replaced by a single summary checkpoint). In the very same step where compaction runs (the plugin's pre-step hook always executes after the compaction engine's), the plugin reads the swallowed injection rows' frozen snapshots straight from the append-only session log via each `compaction/summary` event's `shadowedSeqs`, and emits a "compaction restore" injection row with the current request:
+
+* **Per-item rebuild**: the same pipeline as the diff-ejection partial-survival rewrite — current DB body + injection truncation + format rendering; the segment comes from the frozen pre-compaction snapshot; deleted/evicted memories are skipped (prefer missing over wrong);
+* **Restore marker**: the restore row carries `restoredCompactionSeq` (the compaction event seq restored up to), persisted with the event; even if the restore row is itself compacted later, the marker remains scannable from the log — no duplicate or missed restores across restarts and chained compactions;
+* **Two-turn scan window**: restore lags a compaction by at most one step/turn (same-step restore, next-step retry after an abort, first turn after a restart), so the scan only looks at the last two turns and per-step cost is independent of total log length; older compactions are treated as reconciled — the feature is forward-looking only and never back-fills historical compactions;
+* **Effective mid-turn**: restore also works on tool-result-only steps without a user message (the row is appended to the end of the step's request); only the `agent/request-error` overflow compaction path lags one step because it does not re-run pre-step;
+* **Interaction with recall/ejection**: restored entries take precedence over this round's recall (deduplicated by id), get one full round free of ejection, then rejoin the normal top-k ejection dynamics; pinned entries keep being pinned-recalled every turn;
+* Restore actions are recorded in the activity log ("Compaction restore").
+
 #### Memory tools
 
 The plugin registers 7 memory tools for agents:
