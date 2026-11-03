@@ -351,8 +351,33 @@ Repeated `memory_search` / `conversation_search` calls with identical arguments 
 * `lib/client.js`: web UI slots, global-prompt dialog, other modals, topic navigator, turn actions, styles, and locale dictionaries.
 * `lib/memory.js`: local memory store (SQLite), jieba/bigram tokenized recall, distillation, and background index rebuild logic.
 * `lib/task.js`: task archive capture, status synchronization, task tools, automatic hints, injection, extraction, and trash routes.
+* `lib/route-guard.js`: shared authorization and content-type fence for all HTTP routes.
 * `cordis.patch.yml`: bundle insertion patch for the plugin.
 * `README.md` / `README.en.md`: Chinese and English documentation.
+
+## API authorization
+
+The plugin registers its own exact routes on `webServer` (`/dsh-session-kit/*`, `/dsh-turns-del*`). The host's `dsh-host-webserver` provides no server-level authentication — authorization lives only on `dsh-client-connection`'s own `/api` routes — so these routes are gated by `lib/route-guard.js` **before any request body is read**:
+
+* `connection` is read softly via `ctx.get('connection', false)` and asked with `admit(req)`;
+* only `peer.principal.kind === 'owner'` (the local Web GUI and the Desktop shell) is allowed;
+* untrusted `Host`/`Origin` or `Sec-Fetch-Site: cross-site` → 403; unauthenticated → 401;
+* a missing `connection` service or `admit` → **503, fail-closed**; nothing is ever let through;
+* every POST requires `application/json`, so browser simple requests (`text/plain` and friends) cannot bypass the preflight check to write.
+
+In practice:
+
+| Caller | Result |
+|---|---|
+| Web GUI (same-origin fetch) | works; the `dsh-auth-*` cookie is sent automatically |
+| Desktop (`dsh-app://app`) | works; the shell injects the host cookie |
+| Local script / curl without a cookie | **401**; exchange or self-sign a cookie first |
+| DNS rebinding / cross-site request | **403** |
+| Paired remote device (remote-web-ui) | **401**; `admit` does not recognize device cookies |
+
+For scripted access, redeem the `?token=` URL printed by `dsh web`, or self-sign with the secret of the `client-connection/browser-session` record in `<harness home>/.credentials.yaml`.
+
+> Convention: new HTTP routes must go through each module's `handle()` wrapper (`index.js` / `memory.js` / `task.js`) and must not call `ctx.webServer.register` directly, which would bypass the fence. Every wrapper site carries a prominent comment saying so — read it before touching route registration.
 
 ## Notes and limits
 

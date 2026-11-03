@@ -353,8 +353,33 @@ RRF（Reciprocal Rank Fusion）把三路名单按名次融合，只吃名次、�
 * `lib/client.js`：Web UI Slot、全局提示弹窗、其他弹窗、话题导航、轮次操作、样式与 locale 字典。
 * `lib/memory.js`：本地记忆库（SQLite）、jieba/二元组分词召回、蒸馏与后台索引重建逻辑。
 * `lib/task.js`：任务档案采集、状态同步、任务工具、自动提示、注入、提取与回收站路由。
+* `lib/route-guard.js`：HTTP 路由的统一鉴权与内容类型栅栏（三个注册点共用）。
 * `cordis.patch.yml`：插件 bundle 插入 patch。
 * `README.md` / `README.en.md`：中文与英文说明文档。
+
+## API 鉴权
+
+插件在 `webServer` 上自注册 exact 路由（`/dsh-session-kit/*`、`/dsh-turns-del*`），而宿主 `dsh-host-webserver` 不提供服务器级认证，鉴权只挂在 `dsh-client-connection` 自己的 `/api` 路由上。因此这些路由统一由 `lib/route-guard.js` 在**读取请求体之前**做一次判定：
+
+* 通过 `ctx.get('connection', false)` 软取 `connection` 服务，调用 `admit(req)`；
+* 只放行 `peer.principal.kind === 'owner'`（本机 Web GUI 与 Desktop 外壳）；
+* `Host`/`Origin` 不可信或 `Sec-Fetch-Site: cross-site` → 403；未认证 → 401；
+* `connection` 服务缺失或 `admit` 不可用 → **503 fail-closed**，绝不放行；
+* 所有 POST 强制 `application/json`，浏览器简单请求（`text/plain` 等）无法绕过预检写入。
+
+实践含义：
+
+| 调用方 | 结果 |
+|---|---|
+| Web GUI（同源 fetch） | 正常，`dsh-auth-*` cookie 自动携带 |
+| Desktop（`dsh-app://app`） | 正常，壳层注入 host cookie |
+| 本机裸脚本 / curl（无 cookie） | **401**，需先换取或自签 cookie |
+| DNS rebinding / 跨站请求 | **403** |
+| 远程配对设备（remote-web-ui） | **401**，设备 cookie 不被 `admit` 认可 |
+
+如需从脚本访问，可从 `dsh web` 启动行打印的带 `?token=` 的 URL 换取 cookie，或读取 `<harness home>/.credentials.yaml` 中 `client-connection/browser-session` 记录的密钥自签。
+
+> 约定：新增 HTTP 路由必须经由各模块的 `handle()` 包装（`index.js` / `memory.js` / `task.js`），禁止直接调用 `ctx.webServer.register`，否则会绕开鉴权。每个包装点上方都有醒目注释说明这一点，改动时请先读那里。
 
 ## 注意事项与限制
 
