@@ -54,7 +54,7 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/9009088c-24f1-4b71-af21-320f2d8571fb" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/4b68424a-7ddc-4db3-b862-5abd7ee279ae" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/9fd9e6f5-78c0-4fa9-a741-f34ee422dfba" />
-<img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/8fca256c-8a6e-4820-a026-00fc013264d7" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/e4f9f74c-0a81-44c1-b28f-aa94f528aa08" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
 <img width="1712" height="1283" alt="image" src="https://github.com/user-attachments/assets/21a7646c-0cbe-4f3c-98c9-fb056119b19e" />
 <img width="1895" height="1108" alt="image" src="https://github.com/user-attachments/assets/b5fb1a13-178b-49f8-9511-2a9ab15f9d50" />
