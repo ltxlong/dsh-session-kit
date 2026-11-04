@@ -30,29 +30,34 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 
 ## Features
 
-- Delete conversations to the system recycle bin, including sub-agent conversation logs
-- Round-level deletion of conversations (delete directly to the latest conversation)
-- Refresh conversations (delete + resend)
-- Edit conversations (delete + edit + resend)
-- Left-right navigation (left navigation is for in-conversation hierarchical navigation, right navigation is for conversation navigation, both can be enabled/disabled)
-- Ability to add custom global prompts
-- Adjustable context compression configuration parameters
-- Archive conversation quick preview and recovery
-- Transparent memory function, allowing custom memory formats and fixed recall; automatic recall can be manually turned off
-- When generating memories, it will automatically recognize based on the name of the activated memory format, which has built-in code-type memory formats
-- Temporary memory can be manually converted to permanent memory; a conversation will not recall its own generated temporary memory, but cross-conversation recall is possible
-- Memory recall is divided into fixed recall, automatic recall, and manual recall; each round of conversation can display memory snapshots from the context
-- Task management – as an extension of the memory function, usable across conversations
+- Delete conversations to the system recycle bin, including sub-agent conversation logs  
+- Round-level deletion of dialogues (directly delete up to the latest conversation)  
+- Refresh conversation (delete + resend)  
+- Edit conversation (delete + edit + resend)  
+- Left and right navigation (left navigation is hierarchical navigation within the conversation, right navigation is conversation navigation, both support enable/disable)  
+- Can add custom global prompts  
+- Can adjust context compression configuration parameters  
+- Immediately restore swallowed memory snapshots after context compression  
+- Archived conversations can be quickly previewed and restored, can be bookmarked  
+- Memory function is not a black box, fully transparent, visual, editable; memory snapshots in the context can be seen in every round of conversation  
+- Flexible memory isolation mode, a workspace can bind to a single memory project, a conversation can bind to multiple memory projects  
+- Can set custom memory formats and fixed recall; automatic recall feature can be manually turned off  
+- When generating memory, it automatically recognizes based on the name of the activated memory format; built-in code-type memory formats available  
+- Temporary memories can be manually converted to permanent memories; conversations do not recall self-generated temporary memories, cross-conversation recall is possible  
+- Memory recall types include fixed recall, automatic recall, and manual recall  
+- Context takes effect immediately after disabling/deleting memory  
+- Task management - as an extension of the memory feature, usable across conversations
 
 ## example
 
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/ffe483c4-08d2-4a1b-af51-c0694d323670" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/9009088c-24f1-4b71-af21-320f2d8571fb" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/4b68424a-7ddc-4db3-b862-5abd7ee279ae" />
-<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/2663c8be-ab4a-4339-92eb-d67793be1b0f" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/9fd9e6f5-78c0-4fa9-a741-f34ee422dfba" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/8fca256c-8a6e-4820-a026-00fc013264d7" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
 <img width="1712" height="1283" alt="image" src="https://github.com/user-attachments/assets/21a7646c-0cbe-4f3c-98c9-fb056119b19e" />
+<img width="1895" height="1108" alt="image" src="https://github.com/user-attachments/assets/b5fb1a13-178b-49f8-9511-2a9ab15f9d50" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/6edb3176-9331-4328-a3dc-9aecf3d2cf01" />
 <img width="1366" height="1212" alt="image" src="https://github.com/user-attachments/assets/ddb056c1-fc84-4316-a803-c8eed0636115" />
 <img width="1350" height="1205" alt="image" src="https://github.com/user-attachments/assets/f54974fe-1bfe-40b6-b603-fcf4c2362f4f" />
