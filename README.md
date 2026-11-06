@@ -39,6 +39,7 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 - 可以新增自定义全局提示词
 - 可以调整上下文压缩配置参数
 - 上下文压缩后即刻恢复被吞掉的记忆快照
+- 基于上下文分叉会话，大幅减少分叉后新会话的上下文
 - 归档会话可以快捷预览和恢复，可以收藏
 - 记忆功能拒绝黑箱，完全透明、可视化可编辑、每轮对话都可以看到上下文中的记忆快照
 - 灵活的记忆隔离模式，工作区可以绑定单个记忆项目，会话可以绑定多个记忆项目
@@ -54,8 +55,8 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/ffe483c4-08d2-4a1b-af51-c0694d323670" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/9009088c-24f1-4b71-af21-320f2d8571fb" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/a76135e3-82da-42bf-9c00-205e91af86b7" />
-<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/6c6571b6-0576-432e-845c-04fa9453597d" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/4b68424a-7ddc-4db3-b862-5abd7ee279ae" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/6c6571b6-0576-432e-845c-04fa9453597d" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/9fd9e6f5-78c0-4fa9-a741-f34ee422dfba" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/e4f9f74c-0a81-44c1-b28f-aa94f528aa08" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
