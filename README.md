@@ -62,10 +62,13 @@ dsh plugin --profile web add github:ltxlong/dsh-session-kit
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/9fd9e6f5-78c0-4fa9-a741-f34ee422dfba" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/e4f9f74c-0a81-44c1-b28f-aa94f528aa08" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/6cf56084-6568-402f-b77f-e90d6499c7ed" />
-<img width="1712" height="1343" alt="image" src="https://github.com/user-attachments/assets/9a79de0a-a0f7-48a7-aec6-c0b995da5fb3" />
+<img width="1712" height="1349" alt="image" src="https://github.com/user-attachments/assets/6ae7c4f0-ec02-42c4-87b4-d8cd947ce00c" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/1949115e-3db0-4631-96fa-59cfb0a52c20" />
 <img width="1714" height="1343" alt="image" src="https://github.com/user-attachments/assets/9b89bc38-9990-4f89-969d-874fd72002ed" />
 <img width="1708" height="1306" alt="image" src="https://github.com/user-attachments/assets/6487fa27-a3a9-4e2d-a4d9-fb68c914c106" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/f6170126-9d33-451e-a333-377997b6695e" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/858c6b30-d696-44d7-a70d-7c4bafc89da8" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/093eff37-954a-452a-902b-ad1f61fcceea" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
 <img width="1712" height="1283" alt="image" src="https://github.com/user-attachments/assets/21a7646c-0cbe-4f3c-98c9-fb056119b19e" />
 <img width="2033" height="1188" alt="image" src="https://github.com/user-attachments/assets/694ed4ce-0ed8-4f0f-b1de-9f42f8930288" />
