@@ -4,7 +4,7 @@
 
 English | [中文](README.md)
 
-`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, task management and task archives, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, local memory management and recall, and a left-right-side topic navigator.
+`dsh-session-kit` is a DeepSeek Harness plugin that adds practical session utilities without patching DSH core code. It extends the conversation page with a session-management menu, archived-session tools, task management and task archives, runtime global prompt settings, runtime context compaction config, turn-level cleanup/regeneration actions, local memory management and recall, personality emotions, and a left-right-side topic navigator.
 
 ## Install
 
@@ -51,7 +51,6 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 - When automatically recalling memories, rules can be configured to remind whether the memory is desired, with interactive question card  
 - Context takes effect immediately after disabling/deleting memory  
 - Task management - as an extension of the memory feature, usable across conversations  
-- State engine: mood/favor/energy axes evolve with the conversation; lexicon judgment plus optional LLM judgment (piggybacking on auto-distill); state only shapes expression and never blocks tools or refuses tasks
 
 ## example
 
