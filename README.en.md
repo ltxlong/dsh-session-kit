@@ -40,6 +40,7 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 - Based on context branching conversations, significantly reduce the context of new sessions after branching  
 - Immediately restore swallowed memory snapshots after context compression  
 - Archived conversations can be quickly previewed and restored, can be favorited, and can have their content searched  
+- Having a character setting engine and a character status engine  
 - Memory function is not a black box, fully transparent, visual, editable; memory snapshots in the context can be seen in every round of conversation  
 - Flexible memory isolation mode, a workspace can bind to a single memory project, a conversation can bind to multiple memory projects  
 - Can set custom memory formats and fixed recall; automatic recall feature can be manually turned off  
@@ -49,7 +50,8 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 - When creating a new memory with memory_add, semantic judgment can be configured to detect duplicate memories, with interactive question card 
 - When automatically recalling memories, rules can be configured to remind whether the memory is desired, with interactive question card  
 - Context takes effect immediately after disabling/deleting memory  
-- Task management - as an extension of the memory feature, usable across conversations
+- Task management - as an extension of the memory feature, usable across conversations  
+- State engine: mood/favor/energy axes evolve with the conversation; lexicon judgment plus optional LLM judgment (piggybacking on auto-distill); state only shapes expression and never blocks tools or refuses tasks
 
 ## example
 
@@ -61,10 +63,13 @@ If updating to dsh version 0.1.5 causes a session loading failure error, such as
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/9fd9e6f5-78c0-4fa9-a741-f34ee422dfba" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/e4f9f74c-0a81-44c1-b28f-aa94f528aa08" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/6cf56084-6568-402f-b77f-e90d6499c7ed" />
-<img width="1712" height="1343" alt="image" src="https://github.com/user-attachments/assets/9a79de0a-a0f7-48a7-aec6-c0b995da5fb3" />
+<img width="1712" height="1349" alt="image" src="https://github.com/user-attachments/assets/6ae7c4f0-ec02-42c4-87b4-d8cd947ce00c" />
 <img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/1949115e-3db0-4631-96fa-59cfb0a52c20" />
 <img width="1714" height="1343" alt="image" src="https://github.com/user-attachments/assets/9b89bc38-9990-4f89-969d-874fd72002ed" />
 <img width="1708" height="1306" alt="image" src="https://github.com/user-attachments/assets/6487fa27-a3a9-4e2d-a4d9-fb68c914c106" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/f6170126-9d33-451e-a333-377997b6695e" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/858c6b30-d696-44d7-a70d-7c4bafc89da8" />
+<img width="2238" height="1434" alt="image" src="https://github.com/user-attachments/assets/093eff37-954a-452a-902b-ad1f61fcceea" />
 <img width="2518" height="1594" alt="image" src="https://github.com/user-attachments/assets/66843588-d7d2-4e15-b2e2-896560ad953e" />
 <img width="1712" height="1283" alt="image" src="https://github.com/user-attachments/assets/21a7646c-0cbe-4f3c-98c9-fb056119b19e" />
 <img width="2033" height="1188" alt="image" src="https://github.com/user-attachments/assets/694ed4ce-0ed8-4f0f-b1de-9f42f8930288" />
@@ -233,6 +238,7 @@ Memories enter the store through three independent paths, ending in the persiste
 * Content involving code, paths, or APIs is stored as the structured JSON format; paths and symbols are string arrays, content and pitfall may contain newlines, and unknown fields are preserved for future extension;
 * Distilled output first lands in the **temporary memory pool** (in memory, not persisted), always created as `active`; duplicates against the persistent store or the pool are merged automatically (an identical entry in the pool only refreshes its timestamp and source turn instead of being added again);
 * Only `text` blocks count as the distillation result, with **no fallback to `reasoning`** (otherwise reasoning drafts would be stored as memory bodies); a turn with no usable output is skipped and logged;
+* **State-judgment piggyback (optional)**: when the state engine's "LLM judgment" is enabled (auto-distill must also be on), the distill prompt gains a state-judgment rule and the model appends one extra line to its output: `<<<STATE>{"confidence":<integer 0-100>,"增量":{"<axisId>":<number>}}</STATE>>>`. The program strips this line before memory parsing (it is not part of the memory body) and hands the judgment object to the state engine — the prompt and output each grow by a few dozen tokens, with no separate completion call. The judgment is independent of memory parsing: if memory parsing fails, the state judgment still applies. A distill retry (model-override failure falling back to the default route) strips the line again for the same turn; the state engine deduplicates by turn and adopts only the first. Manually distilling an old turn never backfills state retroactively. Judgments with confidence below the threshold (default 45) are dropped entirely; increments are filtered by the enabled-dimension whitelist and clamped to ±45, then merged with the lexicon judgment (dimensions with heavy-word hits follow the lexicon), and the difference is applied while patching that turn's state log in place;
 * Temporary memories carry source-session and source-turn metadata, used for cross-session compensation during recall (see below).
 
 #### Recall pipeline
@@ -362,11 +368,24 @@ Repeated `memory_search` / `conversation_search` calls with identical arguments 
 * **Recall panel**: each turn can expand a panel showing the memories actually carried in that turn's context (computed by replaying the session log; weak turns naturally inherit the background injection); injected snapshots persist across restarts, and later edits or deletions of memories do not alter past turns. The panel also marks whether an entry was newly recalled this turn or already present last turn, and which segment it came from.
 * **Session "Memory" view**: a new Memory tab in the conversation view shows this session's injections in three columns (fixed / automatic / manual), with a donut chart of the latest turn's composition (fixed vs automatic share) and keyword filtering. It shares the recall panel's data source (the same session-log replay), so it recomputes fully after a restart with no extra storage. The tab can be hidden in settings.
 
+### State engine
+
+A new State tab in the conversation view. Three axes (mood / favor / energy) each hold a 0–100 value that evolves with the conversation, across sessions in a two-layer "session value + baseline" structure: after 10 idle minutes (configurable) the session value settles into the baseline by the absorb factor, and the startup sweep backfills any sessions that never settled. Three invariants: state only shapes expression and **never blocks tools or refuses tasks**; judgment and evolution are separated (judgment emits deltas only, evolution is computed in one place); dynamic state is injected as a standalone context entry patched in place, never into the system prompt (only the fixed expression rules register as a static system section).
+
+* **Lexicon judgment (primary channel)**: the built-in word lists are grouped per dimension (favor/mood/energy; custom words can be added or removed) and matched longest-first against the user's message; negation (×-0.6 reversal), softening (one tier down), and personal-address (one tier up) adjust the tier; per-dimension deltas are applied with inertia damping and endpoint shrinkage;
+* **LLM judgment (optional, piggybacks on distillation)**: with "LLM judgment" enabled (auto-distill must also be on), the distill prompt gains a STATE-line rule whose output is stripped and forwarded (protocol and merge rules see "Write paths → Distillation"), with no separate completion call. Judgments with confidence below the threshold (default 45) are dropped entirely; merged per dimension with the lexicon — dimensions with heavy-word hits follow the lexicon, all others follow the LLM;
+* **Energy axis specifics**: an intraday fatigue curve (awake at 08:00 → peak fatigue at 02:00 → recovery by 08:00) scaled by mood — the better the mood, the lighter the fatigue and the faster the recovery; discussion-style expressions (e.g. "I disagree", "try another angle") raise energy instead of lowering it;
+* **Editable dimensions**: the built-in three dimensions expose tier scores (six tiers), band descriptions, word lists, and decay half-life in the State tab; custom dimensions can be added;
+* **Observability**: the state log (word hits / LLM adjustments / baseline settling / resets) is paginated and pruned by retention days; the history chart buckets by minute/hour/day (calendar range selection supported, taking the relaxed value at each bucket end so natural decay between writes is visible); the `status_test` tool runs the lexicon on arbitrary text (read-only, never mutates state) to debug "why did state move this turn / not move";
+* **Settings (state_settings)**: master toggle, LLM judgment toggle, inertia (default 0.5), absorb factor, idle-settle minutes (default 30), LLM confidence thresholds (drop at 45 / adopt at 60), log and snapshot retention days (default 30, whitelist dropdown), all persisted to a dedicated settings table.
+
 ## Files
 
 * `lib/index.js`: host routes, runtime global prompt registration, archive/session operations, turn deletion, and regeneration logic.
 * `lib/client.js`: web UI slots, global-prompt dialog, other modals, topic navigator, turn actions, styles, and locale dictionaries.
-* `lib/memory.js`: local memory store (SQLite), jieba/bigram tokenized recall, distillation, and background index rebuild logic.
+* `lib/memory.js`: local memory store (SQLite), jieba/bigram tokenized recall, distillation (including the state-judgment piggyback protocol), and background index rebuild logic.
+* `lib/state.js`: state engine — state storage, lexicon judgment, baseline settling, LLM-judgment forwarding, and the state data API.
+* `lib/state-words.js`: built-in word-list seeds and tier score tables for the state engine.
 * `lib/task.js`: task archive capture, status synchronization, task tools, automatic hints, injection, extraction, and trash routes.
 * `lib/route-guard.js`: shared authorization and content-type fence for all HTTP routes.
 * `cordis.patch.yml`: bundle insertion patch for the plugin.
